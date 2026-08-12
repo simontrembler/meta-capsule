@@ -78,6 +78,12 @@ export const en: Record<TranslationKey, string> = {
   'settings.languageTitle': 'Interface language',
   'settings.languageBody': 'Choose the display language for Meta Capsule. Your preference is saved locally.',
 
+  // Support
+  'support.title': 'Project & support',
+  'support.body': 'Meta Capsule is open source. The code lives on GitHub — and a coffee helps keep it going.',
+  'support.github': 'View on GitHub',
+  'support.coffee': 'Buy me a coffee',
+
   // Dashboard
   'dashboard.loading': 'Generating your personalized overview...',
   'dashboard.badge': 'Dashboard',

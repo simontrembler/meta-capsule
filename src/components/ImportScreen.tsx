@@ -3,6 +3,7 @@ import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { AlertCircle, Lock, ShieldCheck, WifiOff } from 'lucide-react';
+import { SupportLinks } from './SupportLinks';
 
 export const ImportScreen: React.FC = () => {
   const {
@@ -185,6 +186,11 @@ export const ImportScreen: React.FC = () => {
                   <h2 className="font-display text-sm font-semibold text-ink-900">{t('import.telemetryTitle')}</h2>
                   <p className="mt-1.5 text-sm leading-relaxed text-ink-500">{t('import.telemetryDesc')}</p>
                 </div>
+              </div>
+
+              <div className="mt-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-ink-200/80 pt-8">
+                <p className="text-sm text-ink-500 max-w-md">{t('support.body')}</p>
+                <SupportLinks compact />
               </div>
             </section>
           </>

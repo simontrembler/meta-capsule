@@ -78,6 +78,12 @@ export const fr = {
   'settings.languageTitle': 'Langue de l’interface',
   'settings.languageBody': 'Choisissez la langue d’affichage de Meta Capsule. Votre préférence est enregistrée localement.',
 
+  // Support
+  'support.title': 'Projet & soutien',
+  'support.body': 'Meta Capsule est open source. Le code est sur GitHub — et un café aide à continuer.',
+  'support.github': 'Voir sur GitHub',
+  'support.coffee': 'Achètes-moé un café',
+
   // Dashboard
   'dashboard.loading': 'Génération de votre synthèse personnalisée...',
   'dashboard.badge': 'Tableau de bord',

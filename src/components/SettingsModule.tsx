@@ -2,7 +2,8 @@ import React from 'react';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
-import { Trash2, Database, ShieldAlert } from 'lucide-react';
+import { SupportLinks } from './SupportLinks';
+import { Trash2, Database, ShieldAlert, Heart } from 'lucide-react';
 
 export const SettingsModule: React.FC = () => {
   const { resetArchive } = useArchive();
@@ -28,6 +29,15 @@ export const SettingsModule: React.FC = () => {
           <p>• <strong className="text-ink-700">{t('settings.telemetry')}</strong> {t('settings.telemetryValue')}</p>
           <p>• <strong className="text-ink-700">{t('settings.internet')}</strong> {t('settings.internetValue')}</p>
         </div>
+      </div>
+
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
+        <div className="flex items-center gap-3 text-ink-700">
+          <Heart size={20} className="text-brand-600" />
+          <h3 className="font-display text-lg font-semibold text-ink-950">{t('support.title')}</h3>
+        </div>
+        <p className="text-ink-600 text-sm leading-relaxed">{t('support.body')}</p>
+        <SupportLinks />
       </div>
 
       <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
