@@ -147,26 +147,36 @@ export const DashboardModule: React.FC = () => {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Messages KPI */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow duration-200">
-          <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('messages')}
+          className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md hover:border-brand-200 hover:bg-brand-50/30 transition-all duration-200 text-left cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 group-hover:bg-brand-100 transition-colors">
             <MessageSquare size={24} />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Messages échangés</p>
             <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalMessages.toLocaleString('fr-FR')}</h3>
           </div>
-        </div>
+          <ArrowRight size={16} className="text-slate-300 group-hover:text-brand-600 shrink-0 transition-colors" />
+        </button>
 
         {/* Media KPI */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow duration-200">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('gallery')}
+          className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200 text-left cursor-pointer group"
+        >
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
             <Image size={24} />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Photos & Vidéos</p>
             <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalMedia.toLocaleString('fr-FR')}</h3>
           </div>
-        </div>
+          <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600 shrink-0 transition-colors" />
+        </button>
 
         {/* Posts KPI */}
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-5 hover:shadow-md transition-shadow duration-200">

@@ -10,7 +10,16 @@ import { AdTransparencyModule } from './components/AdTransparencyModule';
 import { SettingsModule } from './components/SettingsModule';
 
 const AppContent: React.FC = () => {
-  const { activeTab, stats } = useArchive();
+  const { activeTab, stats, isRestoringSession } = useArchive();
+
+  if (isRestoringSession) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-brand-50 gap-3">
+        <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-brand-600 animate-spin" />
+        <p className="text-sm text-slate-500 font-medium">Restauration de la session locale…</p>
+      </div>
+    );
+  }
 
   // If no archive is loaded and we are on the import tab, show the import screen
   if (activeTab === 'import' || !stats) {

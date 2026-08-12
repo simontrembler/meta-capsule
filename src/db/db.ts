@@ -7,6 +7,13 @@ import type {
   MediaAttachment,
   AdTargeting
 } from './models';
+import type { FileSystemFileHandle } from '../types/file-system-access';
+
+export interface StoredFileHandle {
+  id: string;
+  fileName: string;
+  handle: FileSystemFileHandle;
+}
 
 export class MetaArchiveDatabase extends Dexie {
   profiles!: Table<UserProfile, string>;
@@ -15,6 +22,7 @@ export class MetaArchiveDatabase extends Dexie {
   posts!: Table<Post, string>;
   media!: Table<MediaAttachment, string>;
   adTargeting!: Table<AdTargeting, string>;
+  fileHandles!: Table<StoredFileHandle, string>;
 
   constructor() {
     super('MetaArchiveViewerDB');
@@ -27,13 +35,22 @@ export class MetaArchiveDatabase extends Dexie {
       media: 'id, platform, relativePath, type, timestamp',
       adTargeting: 'id, platform'
     });
+
+    // Persist FileSystemFileHandle across refreshes (Chromium File System Access API)
+    this.version(2).stores({
+      fileHandles: 'id, fileName'
+    });
+
+    // Media origin (post / story / message) for gallery filters
+    this.version(3).stores({
+      media: 'id, platform, relativePath, type, source, timestamp, [source+timestamp]'
+    });
   }
 
   /**
-   * Clears all tables in the database.
-   * Useful for resetting the application or switching archives.
+   * Clears imported archive data, but keeps persisted File System Access handles.
    */
-  async clearAll() {
+  async clearArchiveData() {
     await Promise.all([
       this.profiles.clear(),
       this.conversations.clear(),
@@ -41,6 +58,16 @@ export class MetaArchiveDatabase extends Dexie {
       this.posts.clear(),
       this.media.clear(),
       this.adTargeting.clear()
+    ]);
+  }
+
+  /**
+   * Clears all tables including persisted file handles.
+   */
+  async clearAll() {
+    await Promise.all([
+      this.clearArchiveData(),
+      this.fileHandles.clear()
     ]);
   }
 }

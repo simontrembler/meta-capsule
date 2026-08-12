@@ -62,11 +62,15 @@ export interface Post {
   commentsCount?: number;
 }
 
+/** Origin of a media file inside the Meta export tree */
+export type MediaSource = 'post' | 'story' | 'message' | 'other';
+
 export interface MediaAttachment {
   id: string; // e.g. "facebook:media_123"
   platform: 'facebook' | 'instagram';
   relativePath: string; // Path inside the ZIP
   type: 'photo' | 'video' | 'audio' | 'file';
+  source: MediaSource;
   timestamp: number; // Epoch ms
   associatedId?: string; // Message ID or Post ID
 }

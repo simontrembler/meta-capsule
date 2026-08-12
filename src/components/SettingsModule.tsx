@@ -18,6 +18,7 @@ export const SettingsModule: React.FC = () => {
         </p>
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 space-y-1">
           <p>• <strong>Emplacement de stockage :</strong> IndexedDB (Local)</p>
+          <p>• <strong>Accès archive ZIP :</strong> File System Access API (Chrome/Edge) — handle persisté, sans recopier le fichier</p>
           <p>• <strong>Télémétrie :</strong> Désactivée</p>
           <p>• <strong>Accès Internet :</strong> Non requis (l'application fonctionne hors-ligne)</p>
         </div>

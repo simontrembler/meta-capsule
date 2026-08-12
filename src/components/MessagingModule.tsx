@@ -4,7 +4,7 @@ import { db } from '../db/db';
 import type { Conversation, Message, MessageAttachment } from '../db/models';
 import { getMediaBlobUrl } from '../utils/zipMediaResolver';
 import Dexie from 'dexie';
-import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText } from 'lucide-react';
+import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic } from 'lucide-react';
 
 // Helper component to render media attachments dynamically
 const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | null }> = ({ attachment, zipFile }) => {
@@ -80,6 +80,17 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
     return (
       <div className="relative max-w-xs rounded-xl overflow-hidden border border-slate-200 bg-black">
         <video src={blobUrl} controls className="w-full max-h-60" />
+      </div>
+    );
+  }
+
+  if (attachment.type === 'audio') {
+    return (
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 max-w-xs">
+        <div className="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
+          <Mic size={16} />
+        </div>
+        <audio src={blobUrl} controls preload="metadata" className="w-44 max-w-full h-8" />
       </div>
     );
   }
