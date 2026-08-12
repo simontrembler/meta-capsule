@@ -9,7 +9,7 @@ export const SettingsModule: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="p-8 max-w-4xl space-y-4">
+    <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-4">
       <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
         <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.languageTitle')}</h3>
         <p className="text-ink-600 text-sm">{t('settings.languageBody')}</p>

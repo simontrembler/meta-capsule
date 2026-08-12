@@ -310,7 +310,7 @@ export const GalleryModule: React.FC = () => {
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
         active
           ? activeClass
           : 'text-ink-700 hover:text-ink-950 hover:bg-ink-100'
@@ -321,12 +321,12 @@ export const GalleryModule: React.FC = () => {
   );
 
   return (
-    <div className="p-8 space-y-4 max-w-6xl mx-auto h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-      <div className="bg-white p-4 border border-ink-200 rounded-md space-y-3 shrink-0">
+    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      <div className="bg-white p-3 sm:p-4 border border-ink-200 rounded-md space-y-3 shrink-0">
         <div className="flex items-center gap-2 text-ink-800">
-          <Filter size={18} className="text-brand-600" />
+          <Filter size={18} className="text-brand-600 shrink-0" />
           <span className="font-semibold text-sm">{t('common.filters')}</span>
-          <span className="text-xs text-ink-400 font-medium">
+          <span className="text-xs text-ink-400 font-medium truncate">
             {isLoading
               ? t('common.loading')
               : t('gallery.loaded', {
@@ -337,25 +337,27 @@ export const GalleryModule: React.FC = () => {
           </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400 mr-1">
-            <LayoutGrid size={12} /> {t('gallery.origin')}
-          </div>
-          <div className="flex border border-ink-200 p-0.5">
-            {chip(sourceFilter === 'all', () => setSourceFilter('all'), t('gallery.source.all', { count: counts.total }))}
-            {chip(sourceFilter === 'post', () => setSourceFilter('post'), t('gallery.source.post', { count: counts.post }))}
-            {chip(sourceFilter === 'story', () => setSourceFilter('story'), t('gallery.source.story', { count: counts.story }))}
-            {chip(sourceFilter === 'message', () => setSourceFilter('message'), t('gallery.source.message', { count: counts.message }))}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400">
+              <LayoutGrid size={12} /> {t('gallery.origin')}
+            </div>
+            <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full">
+              {chip(sourceFilter === 'all', () => setSourceFilter('all'), t('gallery.source.all', { count: counts.total }))}
+              {chip(sourceFilter === 'post', () => setSourceFilter('post'), t('gallery.source.post', { count: counts.post }))}
+              {chip(sourceFilter === 'story', () => setSourceFilter('story'), t('gallery.source.story', { count: counts.story }))}
+              {chip(sourceFilter === 'message', () => setSourceFilter('message'), t('gallery.source.message', { count: counts.message }))}
+            </div>
           </div>
 
-          <div className="flex border border-ink-200 p-0.5">
+          <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full">
             {chip(typeFilter === 'all', () => setTypeFilter('all'), t('gallery.type.all'))}
             {chip(typeFilter === 'photo', () => setTypeFilter('photo'), t('gallery.type.photo', { count: counts.photo }))}
             {chip(typeFilter === 'video', () => setTypeFilter('video'), t('gallery.type.video', { count: counts.video }))}
             {chip(typeFilter === 'audio', () => setTypeFilter('audio'), t('gallery.type.audio', { count: counts.audio }))}
           </div>
 
-          <div className="flex border border-ink-200 p-0.5">
+          <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full self-start">
             {chip(platformFilter === 'all', () => setPlatformFilter('all'), t('gallery.platform.all'))}
             {chip(
               platformFilter === 'facebook',
@@ -412,7 +414,7 @@ export const GalleryModule: React.FC = () => {
       </div>
 
       {lightboxIndex !== null && filteredItems[lightboxIndex] && (
-        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col justify-between p-6 text-white">
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col justify-between p-3 sm:p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <span className="text-xs text-ink-400 font-bold uppercase tracking-wider">

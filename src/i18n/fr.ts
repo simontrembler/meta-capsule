@@ -22,6 +22,8 @@ export const fr = {
   'nav.gallery': 'Galerie',
   'nav.ads': 'Publicité',
   'nav.settings': 'Paramètres',
+  'nav.openMenu': 'Ouvrir le menu',
+  'nav.closeMenu': 'Fermer le menu',
   'title.dashboard': "Synthèse de l'activité",
   'title.messages': 'Messagerie',
   'title.gallery': 'Galerie Médias',
@@ -61,7 +63,7 @@ export const fr = {
 
   // Settings
   'settings.privacyTitle': 'Sécurité et Confidentialité',
-  'settings.privacyBody': "Meta-Capsule est conçu pour garantir une confidentialité absolue. Toutes vos données sont stockées localement dans la base de données IndexedDB de votre navigateur et ne sont jamais transmises à un serveur externe.",
+  'settings.privacyBody': "Meta Capsule est conçu pour garantir une confidentialité absolue. Toutes vos données sont stockées localement dans la base de données IndexedDB de votre navigateur et ne sont jamais transmises à un serveur externe.",
   'settings.storage': 'Emplacement de stockage :',
   'settings.storageValue': 'IndexedDB (Local)',
   'settings.zipAccess': 'Accès archive ZIP :',
@@ -74,7 +76,7 @@ export const fr = {
   'settings.dataBody': "Vous pouvez à tout moment supprimer l'intégralité des données importées de votre navigateur. Cette action est irréversible.",
   'settings.deleteData': 'Supprimer toutes les données locales',
   'settings.languageTitle': 'Langue de l’interface',
-  'settings.languageBody': 'Choisissez la langue d’affichage de Meta-Capsule. Votre préférence est enregistrée localement.',
+  'settings.languageBody': 'Choisissez la langue d’affichage de Meta Capsule. Votre préférence est enregistrée localement.',
 
   // Dashboard
   'dashboard.loading': 'Génération de votre synthèse personnalisée...',

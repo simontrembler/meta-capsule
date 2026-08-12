@@ -120,13 +120,13 @@ export const DashboardModule: React.FC = () => {
   const padding = 30;
 
   return (
-    <div className="p-8 space-y-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
       {/* Flat ink hero — forced surface for contrast */}
-      <div className="mc-surface-ink px-7 py-7 rounded-md">
+      <div className="mc-surface-ink px-4 py-5 sm:px-7 sm:py-7 rounded-md">
         <span className="inline-flex items-center px-2 py-0.5 border border-ink-600 mc-text-on-ink-accent text-[10px] font-semibold uppercase tracking-[0.18em]">
           {t('dashboard.badge')}
         </span>
-        <h1 className="mt-3 font-display text-3xl font-semibold tracking-[-0.02em] mc-text-on-ink">
+        <h1 className="mt-3 font-display text-2xl sm:text-3xl font-semibold tracking-[-0.02em] mc-text-on-ink">
           {t('dashboard.hello', { name: profile?.name || stats?.ownerName || t('common.explorer') })}
         </h1>
         <p className="mt-2 mc-text-on-ink-muted text-sm md:text-base max-w-xl leading-relaxed">
@@ -277,7 +277,7 @@ export const DashboardModule: React.FC = () => {
                   {profile.email && (
                     <div className="flex items-center gap-3 text-ink-600">
                       <Mail size={16} className="text-ink-400 shrink-0" />
-                      <span className="truncate">{profile.email}</span>
+                      <span className="mc-selectable truncate">{profile.email}</span>
                     </div>
                   )}
                   {profile.phoneNumber && (
@@ -289,7 +289,7 @@ export const DashboardModule: React.FC = () => {
                   {profile.bio && (
                     <div className="flex items-start gap-3 text-ink-600">
                       <User size={16} className="text-ink-400 shrink-0 mt-0.5" />
-                      <p className="text-xs leading-relaxed italic">"{profile.bio}"</p>
+                      <p className="mc-selectable text-xs leading-relaxed italic">"{profile.bio}"</p>
                     </div>
                   )}
                 </div>

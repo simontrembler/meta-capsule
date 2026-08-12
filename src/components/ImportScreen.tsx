@@ -73,7 +73,7 @@ export const ImportScreen: React.FC = () => {
                   Time capsule
                 </p>
                 <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-[-0.02em] text-ink-950 sm:text-5xl lg:text-[3.35rem]">
-                  Meta-Capsule
+                  Meta Capsule
                 </h1>
                 <p className="mt-4 max-w-md font-display text-2xl font-medium leading-snug tracking-[-0.01em] text-ink-800 sm:text-3xl">
                   {t('import.headline')}

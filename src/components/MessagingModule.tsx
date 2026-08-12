@@ -294,7 +294,7 @@ export const MessagingModule: React.FC = () => {
 
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex overflow-hidden bg-ink-50">
+    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-ink-50">
       
       {/* Sidebar: Conversations List */}
       <div className={`w-full md:w-80 border-r border-ink-200 bg-white flex flex-col h-full shrink-0 ${activeConv ? 'hidden md:flex' : 'flex'}`}>
@@ -376,7 +376,7 @@ export const MessagingModule: React.FC = () => {
         {activeConv ? (
           <>
             {/* Chat Header */}
-            <div className="h-16 bg-white border-b border-ink-200 px-6 flex items-center justify-between shrink-0">
+            <div className="h-14 md:h-16 bg-white border-b border-ink-200 px-3 sm:px-6 flex items-center justify-between shrink-0 gap-2">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => setActiveConv(null)}
@@ -430,7 +430,7 @@ export const MessagingModule: React.FC = () => {
             <div
               ref={chatContainerRef}
               onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-6 space-y-4"
+              className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4"
             >
               {/* Loader for infinite scroll */}
               {isLoadingMessages && !isSearchingChat && (
@@ -488,7 +488,7 @@ export const MessagingModule: React.FC = () => {
                       }`}>
                         {/* Text Content */}
                         {msg.content && (
-                          <p className="leading-relaxed whitespace-pre-wrap break-words font-medium">
+                          <p className="mc-selectable leading-relaxed whitespace-pre-wrap break-words font-medium">
                             {msg.content}
                           </p>
                         )}

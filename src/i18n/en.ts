@@ -22,6 +22,8 @@ export const en: Record<TranslationKey, string> = {
   'nav.gallery': 'Gallery',
   'nav.ads': 'Ads',
   'nav.settings': 'Settings',
+  'nav.openMenu': 'Open menu',
+  'nav.closeMenu': 'Close menu',
   'title.dashboard': 'Activity overview',
   'title.messages': 'Messages',
   'title.gallery': 'Media gallery',
@@ -61,7 +63,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Settings
   'settings.privacyTitle': 'Security & Privacy',
-  'settings.privacyBody': 'Meta-Capsule is built for absolute privacy. All your data is stored locally in your browser’s IndexedDB and is never sent to an external server.',
+  'settings.privacyBody': 'Meta Capsule is built for absolute privacy. All your data is stored locally in your browser’s IndexedDB and is never sent to an external server.',
   'settings.storage': 'Storage location:',
   'settings.storageValue': 'IndexedDB (Local)',
   'settings.zipAccess': 'ZIP archive access:',
@@ -74,7 +76,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.dataBody': 'You can delete all imported data from your browser at any time. This action is irreversible.',
   'settings.deleteData': 'Delete all local data',
   'settings.languageTitle': 'Interface language',
-  'settings.languageBody': 'Choose the display language for Meta-Capsule. Your preference is saved locally.',
+  'settings.languageBody': 'Choose the display language for Meta Capsule. Your preference is saved locally.',
 
   // Dashboard
   'dashboard.loading': 'Generating your personalized overview...',

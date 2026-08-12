@@ -20,6 +20,17 @@
 
 body {
   margin: 0;
+  /* UI chrome shouldn't place a text caret on click */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+select,
+.mc-selectable {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Guaranteed contrast surfaces (avoid light text on missing dark bg) */
