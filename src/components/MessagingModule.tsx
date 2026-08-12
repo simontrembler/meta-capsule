@@ -110,7 +110,7 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
 };
 
 export const MessagingModule: React.FC = () => {
-  const { zipFile } = useArchive();
+  const { getZipFile } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -497,7 +497,11 @@ export const MessagingModule: React.FC = () => {
                         {msg.attachments && (
                           <div className="space-y-2 mt-1">
                             {msg.attachments.map((att, attIdx) => (
-                              <MessageMedia key={attIdx} attachment={att} zipFile={zipFile} />
+                              <MessageMedia
+                                key={attIdx}
+                                attachment={att}
+                                zipFile={getZipFile(msg.platform)}
+                              />
                             ))}
                           </div>
                         )}

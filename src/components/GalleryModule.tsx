@@ -210,7 +210,7 @@ const GalleryItem: React.FC<{
 };
 
 export const GalleryModule: React.FC = () => {
-  const { zipFile } = useArchive();
+  const { getZipFile } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [allMedia, setAllMedia] = useState<MediaAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -310,9 +310,10 @@ export const GalleryModule: React.FC = () => {
   const openLightbox = async (index: number) => {
     setLightboxIndex(index);
     const item = filteredItems[index];
-    if (zipFile && item) {
+    const zip = item ? getZipFile(item.platform) : null;
+    if (zip && item) {
       try {
-        setLightboxBlobUrl(await getMediaBlobUrl(zipFile, item.relativePath));
+        setLightboxBlobUrl(await getMediaBlobUrl(zip, item.relativePath));
       } catch (err) {
         console.error('Failed to open lightbox media:', err);
       }
@@ -332,9 +333,10 @@ export const GalleryModule: React.FC = () => {
     setLightboxIndex(newIndex);
     setLightboxBlobUrl(null);
     const item = filteredItems[newIndex];
-    if (zipFile && item) {
+    const zip = item ? getZipFile(item.platform) : null;
+    if (zip && item) {
       try {
-        setLightboxBlobUrl(await getMediaBlobUrl(zipFile, item.relativePath));
+        setLightboxBlobUrl(await getMediaBlobUrl(zip, item.relativePath));
       } catch (err) {
         console.error('Failed to navigate lightbox media:', err);
       }
@@ -456,7 +458,7 @@ export const GalleryModule: React.FC = () => {
                     <GalleryItem
                       key={item.id}
                       item={item}
-                      zipFile={zipFile}
+                      zipFile={getZipFile(item.platform)}
                       onClick={() => openLightbox(globalIndex)}
                     />
                   );
@@ -522,7 +524,7 @@ export const GalleryModule: React.FC = () => {
             </button>
 
             <div className="flex-1 max-h-[70vh] flex items-center justify-center">
-              {!zipFile ? (
+              {!getZipFile(filteredItems[lightboxIndex].platform) ? (
                 <div className="text-center space-y-2">
                   <AlertCircle size={48} className="text-brand-400 mx-auto" />
                   <p className="font-bold text-lg">{t('gallery.zipMissingMemory')}</p>

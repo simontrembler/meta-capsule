@@ -5,6 +5,7 @@ import { useShell } from '../context/ShellContext';
 import { db } from '../db/db';
 import type { UserProfile } from '../db/models';
 import { ProfileAvatar } from './ProfileAvatar';
+import { ArchivesSlots } from './ArchivesSlots';
 import { LayoutDashboard, MessageSquare, Image, Award, Settings, LogOut, Package, X } from 'lucide-react';
 import type { TranslationKey } from '../i18n';
 
@@ -17,7 +18,7 @@ function platformBadgeClass(platform: string): string {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, resetArchive, stats, zipFile } = useArchive();
+  const { activeTab, setActiveTab, resetArchive, stats, getZipFile } = useArchive();
   const { t } = useLanguage();
   const { isNavOpen, closeNav } = useShell();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -51,9 +52,10 @@ export const Sidebar: React.FC = () => {
     closeNav();
   };
 
+  const multi = (stats?.platforms.length ?? 0) > 1;
+
   return (
     <>
-      {/* Mobile overlay */}
       <div
         className={`fixed inset-0 z-40 bg-ink-950/50 transition-opacity md:hidden ${
           isNavOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -109,6 +111,13 @@ export const Sidebar: React.FC = () => {
               </button>
             );
           })}
+
+          <div className="pt-3 mt-2 border-t border-ink-800">
+            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+              {t('archives.sidebarLabel')}
+            </p>
+            <ArchivesSlots variant="sidebar" />
+          </div>
         </nav>
 
         <div className="p-3 border-t border-ink-800 space-y-3">
@@ -117,7 +126,7 @@ export const Sidebar: React.FC = () => {
               <ProfileAvatar
                 name={stats.ownerName || t('common.user')}
                 relativePath={profile?.profilePicture}
-                zipFile={zipFile}
+                zipFile={getZipFile(stats.platform)}
                 size="sm"
               />
               <div className="min-w-0">
@@ -125,11 +134,16 @@ export const Sidebar: React.FC = () => {
                 <p className="font-semibold mc-text-on-ink text-sm truncate">
                   {stats.ownerName || t('common.user')}
                 </p>
-                <span
-                  className={`inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 border text-[10px] font-semibold uppercase tracking-wider ${platformBadgeClass(stats.platform)}`}
-                >
-                  {stats.platform}
-                </span>
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {(multi ? stats.platforms : [stats.platform]).map((p) => (
+                    <span
+                      key={p}
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 border text-[10px] font-semibold uppercase tracking-wider ${platformBadgeClass(p)}`}
+                    >
+                      {p === 'facebook' ? 'FB' : 'IG'}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           )}

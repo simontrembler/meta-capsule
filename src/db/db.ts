@@ -48,6 +48,20 @@ export class MetaArchiveDatabase extends Dexie {
   }
 
   /**
+   * Clears imported data for one platform only (keeps the other archive).
+   */
+  async clearPlatformData(platform: 'facebook' | 'instagram') {
+    await Promise.all([
+      this.profiles.where('platform').equals(platform).delete(),
+      this.conversations.where('platform').equals(platform).delete(),
+      this.messages.where('platform').equals(platform).delete(),
+      this.posts.where('platform').equals(platform).delete(),
+      this.media.where('platform').equals(platform).delete(),
+      this.adTargeting.where('platform').equals(platform).delete()
+    ]);
+  }
+
+  /**
    * Clears imported archive data, but keeps persisted File System Access handles.
    */
   async clearArchiveData() {

@@ -72,18 +72,65 @@ function toEpochMs(value: unknown): number | null {
   return value < 1e12 ? Math.round(value * 1000) : Math.round(value);
 }
 
+function detectPlatformQuick(
+  fileName: string,
+  entries: Entry[]
+): 'facebook' | 'instagram' {
+  const lowerName = fileName.toLowerCase();
+  if (lowerName.startsWith('instagram-') || lowerName.includes('instagram')) {
+    return 'instagram';
+  }
+  if (lowerName.startsWith('facebook-') || lowerName.includes('facebook')) {
+    return 'facebook';
+  }
+
+  for (const entry of entries) {
+    const f = entry.filename.toLowerCase();
+    if (
+      f.includes('personal_information.json') ||
+      f.includes('instagram_profile') ||
+      f.includes('your_instagram_activity')
+    ) {
+      return 'instagram';
+    }
+  }
+
+  for (const entry of entries) {
+    const f = entry.filename.toLowerCase();
+    if (
+      (f.includes('profile_information.json') && !f.includes('instagram')) ||
+      f.includes('your_facebook_activity') ||
+      f.includes('/posts/your_posts')
+    ) {
+      return 'facebook';
+    }
+  }
+
+  return 'facebook';
+}
+
 self.onmessage = async (event: MessageEvent) => {
   const { type, file } = event.data;
 
   if (type !== 'START') return;
 
   try {
-    // Clear archive tables but keep persisted File System Access handles
-    await db.clearArchiveData();
-
     const zipReader = new ZipReader(new BlobReader(file));
     const entries = await zipReader.getEntries();
     const totalEntries = entries.length;
+
+    const detectedPlatform = detectPlatformQuick(file.name || '', entries);
+
+    postMessage({
+      type: 'PROGRESS',
+      payload: {
+        progress: 0,
+        statusText: `Préparation de l'archive ${detectedPlatform}…`
+      }
+    });
+
+    // Replace only this platform — keep the other archive intact
+    await db.clearPlatformData(detectedPlatform);
 
     postMessage({
       type: 'PROGRESS',
@@ -91,7 +138,7 @@ self.onmessage = async (event: MessageEvent) => {
     });
 
     let ownerName = '';
-    let platform: 'facebook' | 'instagram' = 'facebook';
+    let platform: 'facebook' | 'instagram' = detectedPlatform;
 
     // path → true creation timestamp (ms)
     const mediaTimestamps = new Map<string, number>();
