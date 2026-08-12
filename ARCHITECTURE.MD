@@ -1,4 +1,4 @@
-# 📦 Meta-Capsule - Document d'Architecture Logicielle (SDD)
+# 📦 Meta Capsule - Document d'Architecture Logicielle (SDD)
 
 > Projet: Plateforme web client-side d'exploration conviviale et confidentielle d'archives Meta (Facebook et Instagram)
 >
@@ -309,7 +309,7 @@ Mobile:
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                                                                         │
-│                          📂 Meta-Capsule                               │
+│                          📂 Meta Capsule                               │
 │              Redécouvrez vos données Meta en 100% local                │
 │                                                                         │
 │   ┌─────────────────────────────────────────────────────────────────┐   │

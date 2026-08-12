@@ -1,12 +1,12 @@
-# 📦 Meta-Capsule
+# 📦 Meta Capsule
 
 > **Redécouvrez vos archives Meta (Facebook & Instagram) en toute sécurité, 100% hors-ligne.**
 
-Meta-Capsule est une application web client-side (SPA) conçue pour transformer vos exports de données "lifetime" Meta en un espace de consultation fluide, épuré et chaleureux. Loin du bruit des algorithmes, explorez vos souvenirs numériques en gardant le contrôle absolu sur votre vie privée.
+Meta Capsule est une application web client-side (SPA) conçue pour transformer vos exports de données "lifetime" Meta en un espace de consultation fluide, épuré et chaleureux. Loin du bruit des algorithmes, explorez vos souvenirs numériques en gardant le contrôle absolu sur votre vie privée.
 
-## ✨ Pourquoi Meta-Capsule ?
+## ✨ Pourquoi Meta Capsule ?
 
-Les exports de données fournis par Meta peuvent peser plusieurs dizaines de gigaoctets et sont livrés sous forme de fichiers bruts (JSON/HTML) difficiles à lire. Meta-Capsule décode, unifie et présente ces données de manière visuelle et instantanée.
+Les exports de données fournis par Meta peuvent peser plusieurs dizaines de gigaoctets et sont livrés sous forme de fichiers bruts (JSON/HTML) difficiles à lire. Meta Capsule décode, unifie et présente ces données de manière visuelle et instantanée.
 
 *   **🔒 Confidentialité Absolue (Zero-Server) :** Vos données ne quittent **jamais** votre navigateur. Tout le traitement du fichier `.zip` se fait localement. L'application fonctionne même si vous coupez votre connexion Internet (Air-Gapped).
 *   **⚡ Ultra-Rapide (IndexedDB) :** Conçu pour supporter des archives massives (>20 Go) sans saturer la mémoire vive de votre appareil.
