@@ -128,6 +128,8 @@ export const fr = {
   'gallery.type.video': 'Vidéos ({count})',
   'gallery.type.audio': 'Vocaux ({count})',
   'gallery.platform.all': 'Toutes plateformes',
+  'gallery.period': 'Période',
+  'gallery.period.all': 'Tous les mois',
   'gallery.loaded': '{filtered} / {total} médias · {months} mois',
   'gallery.emptyTitle': 'Aucun média trouvé',
   'gallery.emptyLoading': 'Chargement de la galerie…',

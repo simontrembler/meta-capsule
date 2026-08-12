@@ -128,6 +128,8 @@ export const en: Record<TranslationKey, string> = {
   'gallery.type.video': 'Videos ({count})',
   'gallery.type.audio': 'Voice notes ({count})',
   'gallery.platform.all': 'All platforms',
+  'gallery.period': 'Period',
+  'gallery.period.all': 'All months',
   'gallery.loaded': '{filtered} / {total} media · {months} months',
   'gallery.emptyTitle': 'No media found',
   'gallery.emptyLoading': 'Loading gallery…',

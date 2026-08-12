@@ -22,6 +22,19 @@ import {
 type SourceFilter = 'all' | MediaSource;
 type TypeFilter = 'all' | 'photo' | 'video' | 'audio';
 type PlatformFilter = 'all' | 'facebook' | 'instagram';
+type MonthFilter = 'all' | string; // 'YYYY-MM'
+
+function monthKeyFromTimestamp(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(key: string, dateLocale: string): string {
+  const [year, month] = key.split('-').map(Number);
+  const date = new Date(year, month - 1, 1);
+  const labelRaw = date.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' });
+  return labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
+}
 
 function sourceLabelKey(source: MediaSource | undefined): 'post' | 'story' | 'message' | 'other' {
   return source ?? 'other';
@@ -204,6 +217,7 @@ export const GalleryModule: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
 
@@ -233,22 +247,48 @@ export const GalleryModule: React.FC = () => {
       if (sourceFilter !== 'all' && item.source !== sourceFilter) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (platformFilter !== 'all' && item.platform !== platformFilter) return false;
+      if (monthFilter !== 'all' && monthKeyFromTimestamp(item.timestamp) !== monthFilter) return false;
       return true;
     });
-  }, [allMedia, platformFilter, sourceFilter, typeFilter]);
+  }, [allMedia, monthFilter, platformFilter, sourceFilter, typeFilter]);
+
+  // Months available for the current origin / type / platform (month filter excluded)
+  const monthOptions = useMemo(() => {
+    const countsByMonth = new Map<string, number>();
+    for (const item of allMedia) {
+      if (!item.timestamp) continue;
+      if (sourceFilter !== 'all' && item.source !== sourceFilter) continue;
+      if (typeFilter !== 'all' && item.type !== typeFilter) continue;
+      if (platformFilter !== 'all' && item.platform !== platformFilter) continue;
+      const key = monthKeyFromTimestamp(item.timestamp);
+      countsByMonth.set(key, (countsByMonth.get(key) || 0) + 1);
+    }
+    return Array.from(countsByMonth.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, count]) => ({
+        key,
+        label: formatMonthLabel(key, dateLocale),
+        count
+      }));
+  }, [allMedia, dateLocale, platformFilter, sourceFilter, typeFilter]);
+
+  // If selected month disappears after another filter change, reset to all
+  useEffect(() => {
+    if (monthFilter === 'all') return;
+    if (!monthOptions.some((opt) => opt.key === monthFilter)) {
+      setMonthFilter('all');
+    }
+  }, [monthFilter, monthOptions]);
 
   const mediaGroups = useMemo(() => {
     const groups: { key: string; label: string; items: MediaAttachment[] }[] = [];
     const index = new Map<string, MediaAttachment[]>();
 
     for (const item of filteredItems) {
-      const date = new Date(item.timestamp);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const key = monthKeyFromTimestamp(item.timestamp);
       if (!index.has(key)) {
-        const labelRaw = date.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' });
-        const label = labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
         index.set(key, []);
-        groups.push({ key, label, items: index.get(key)! });
+        groups.push({ key, label: formatMonthLabel(key, dateLocale), items: index.get(key)! });
       }
       index.get(key)!.push(item);
     }
@@ -355,6 +395,28 @@ export const GalleryModule: React.FC = () => {
             {chip(typeFilter === 'photo', () => setTypeFilter('photo'), t('gallery.type.photo', { count: counts.photo }))}
             {chip(typeFilter === 'video', () => setTypeFilter('video'), t('gallery.type.video', { count: counts.video }))}
             {chip(typeFilter === 'audio', () => setTypeFilter('audio'), t('gallery.type.audio', { count: counts.audio }))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <label
+              htmlFor="gallery-month-filter"
+              className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400 shrink-0"
+            >
+              <Calendar size={12} /> {t('gallery.period')}
+            </label>
+            <select
+              id="gallery-month-filter"
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value as MonthFilter)}
+              className="w-full sm:w-auto min-w-[14rem] max-w-full px-3 py-2 text-xs font-semibold bg-ink-50 border border-ink-200 rounded-md text-ink-900 outline-none focus:border-brand-500"
+            >
+              <option value="all">{t('gallery.period.all')}</option>
+              {monthOptions.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label} ({opt.count})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full self-start">
