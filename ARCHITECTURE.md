@@ -1,425 +1,176 @@
-# 📦 Meta Capsule - Document d'Architecture Logicielle (SDD)
+# Meta Capsule — Architecture
 
-> Projet: Plateforme web client-side d'exploration conviviale et confidentielle d'archives Meta (Facebook et Instagram)
->
-> Dépôt: meta-capsule
->
-> Statut: Spécification technique et conception (v1.0)
+> Architecture actuelle du MVP (SPA locale). Document vivant, aligné sur le code.
 
-> Ligne directrice: Minimalisme, transparence et confidentialité absolue
+Dépôt : [meta-capsule](https://github.com/simontrembler/meta-capsule)
+
+Ligne directrice : minimalisme, transparence, confidentialité — consultation en lecture seule, pas de réseau social.
 
 ---
 
-## 📄 Section 1 - Vision, Principes et Confidentialité
+## 1. Principes
 
-### 1.1 Vision et Mission
+1. **Local-first** — parsing et stockage dans le navigateur ; aucun upload des archives.
+2. **Lecture seule** — l’app n’écrit rien sur Meta.
+3. **Sobriété UI** — outil de consultation (shell Atelier / Archive graphite), pas de mécaniques d’engagement.
+4. **Mémoire maîtrisée** — métadonnées en IndexedDB ; médias extraits à la demande depuis le ZIP.
 
-Les exports de données lifetime de Meta représentent souvent 10 à 20 ans de vie numérique, mais ils restent difficiles à lire pour la plupart des utilisateurs: arborescence complexe, JSON bruts, HTML fragmentés, médias éparpillés.
-
-Mission du projet:
-
-> Offrir une application web épurée qui transforme ces archives en expérience de consultation claire, locale et privée.
-
-L'application vise la souveraineté numérique: redonner à l'utilisateur l'accès à ses propres données sans dépendre d'un service cloud tiers.
-
-### 1.2 Principes Fondamentaux
-
-1. Sobriété et neutralité 🧘
-L'interface est un outil de consultation, pas un réseau social. Pas de mécaniques d'engagement, pas de notifications addictives.
-
-2. Confidentialité by design 🔒
-Traitement 100% local, sans envoi des archives vers un serveur applicatif.
-
-3. Transparence 🔍
-Code source auditable. Le comportement réseau doit être explicite et minimal.
-
-4. Accessibilité 🤝
-Expérience simple: glisser-déposer une archive puis explorer.
-
-### 1.3 Garanties de Confidentialité (Zero-Knowledge et Air-Gapped)
-
-- Exécution locale dans le navigateur (SPA).
-- Aucune télémétrie tierce par défaut (pas d'analytics, pas de trackers).
-- Données persistées uniquement localement (IndexedDB et potentiellement OPFS).
-- Mode hors-ligne possible via PWA/service worker.
-- Effacement intégral des données locales via action utilisateur dédiée.
-
-Schéma de confiance:
-
-```text
-[Archive .zip utilisateur] -> [Traitement local navigateur] -> [Stockage local]
-                                 X
-                          [Aucun upload des données]
-```
-
-### 1.4 Périmètre
-
-Dans le périmètre (v1):
-
-- Plateformes: Facebook et Instagram.
-- Formats: JSON prioritaire, HTML support complémentaire.
-- Domaines: messagerie, publications, médias, données de profilage publicitaire.
-
-Hors périmètre (v1):
-
-- Connexion en direct aux APIs Meta.
-- Édition/suppression sur comptes Meta.
-- Synchronisation cloud des archives utilisateur.
+Hors scope produit : API Meta live, sync cloud, édition de compte, télémétrie.
 
 ---
 
-## ⚙️ Section 2 - Pipeline d'Ingestion, Web Worker et Normalisation
-
-### 2.1 Pipeline Global
-
-Le pipeline d'import est exécuté en arrière-plan pour garder une interface fluide:
+## 2. Carte du code
 
 ```text
-[Drop ZIP] -> [Worker] -> [Scan des entrées] -> [Parsing/normalisation] -> [Batch DB] -> [Indexation terminée]
+src/
+  components/     # Écrans et UI (Import, Sidebar, modules, slots archives)
+  context/        # ArchiveContext, LanguageContext, ShellContext
+  db/             # Dexie (db.ts) + modèles (models.ts)
+  i18n/           # Dictionnaires FR / EN
+  utils/          # FSA, session, zip médias, décodage Meta
+  workers/        # ingestion.worker.ts
+  App.tsx         # Landing vs shell + overlay d’ingest
 ```
 
-Étapes:
-
-1. Dépôt de l'archive `.zip`.
-2. Initialisation du worker et transmission du handle de fichier.
-3. Détection des répertoires et formats (JSON/HTML).
-4. Parsing progressif fichier par fichier.
-5. Normalisation vers modèle unifié.
-6. Écriture par lots dans IndexedDB (Dexie).
-7. Émission de progression vers le thread UI.
-
-### 2.2 Worker d'Ingestion
-
-Principes:
-
-- Ne pas bloquer le thread principal.
-- Utiliser un batch d'écriture (p.ex. 500-1000 objets).
-- Remonter un état précis: fichier courant, progression globale, erreurs récupérables.
-
-Exemple simplifié:
-
-```typescript
-self.onmessage = async (event) => {
-  const { zipFile } = event.data;
-  // 1) Scanner les entrées
-  // 2) Filtrer les fichiers utiles
-  // 3) Parser + normaliser
-  // 4) bulkPut par lots
-  // 5) postMessage(PROGRESS/COMPLETE)
-};
-```
-
-### 2.3 Normalisation des Encodages
-
-Problème connu: mojibake et variations d'encodage sur certaines chaînes exportées.
-
-Règles:
-
-- Toutes les chaînes passent par une fonction de nettoyage UTF-8.
-- Les timestamps sont convertis en epoch millisecondes.
-- Les champs absents ou ambigus sont normalisés selon un schéma unique.
-
-### 2.4 Stratégie Mémoire pour Gros Volumes
-
-Règle critique:
-
-> Ne jamais charger tous les médias en mémoire.
-
-Approche:
-
-- Stocker surtout des métadonnées et `relativePath` en base.
-- Extraire les médias à la demande.
-- Produire des Blob URLs temporaires et les révoquer après usage.
-- Utiliser virtualisation dans les vues longues (messages, galeries).
+Stack runtime : React 18 + Vite + TypeScript + Tailwind ; Dexie ; `@zip.js/zip.js` ; lucide-react.
 
 ---
 
-## 🗄️ Section 3 - Architecture IndexedDB avec Dexie.js
+## 3. Flux global
 
-### 3.1 Principes de Schéma
-
-- Indexer seulement les champs nécessaires aux tris et filtres.
-- Utiliser des clés primaires déterministes pour éviter les doublons.
-- Favoriser les index composés pour les parcours chronologiques.
-
-Exemples d'identifiants:
-
-- `facebook:thread_123`
-- `instagram:post_456`
-
-### 3.2 Schéma Dexie (Proposition)
-
-```typescript
-import Dexie, { type Table } from 'dexie';
-import type {
-  UserProfile,
-  Conversation,
-  Message,
-  Post,
-  MediaAttachment,
-  AdTargeting
-} from './models';
-
-export class MetaArchiveDatabase extends Dexie {
-  profiles!: Table<UserProfile, string>;
-  conversations!: Table<Conversation, string>;
-  messages!: Table<Message, string>;
-  posts!: Table<Post, string>;
-  media!: Table<MediaAttachment, string>;
-  adTargeting!: Table<AdTargeting, string>;
-
-  constructor() {
-    super('MetaArchiveViewerDB');
-
-    this.version(1).stores({
-      profiles: 'id, platform',
-      conversations: 'id, platform, lastMessageTimestamp, *participants',
-      messages: 'id, conversationId, timestamp, [conversationId+timestamp], platform, isFromUser',
-      posts: 'id, platform, type, timestamp, [platform+type]',
-      media: 'id, platform, relativePath, type, timestamp',
-      adTargeting: 'id, platform'
-    });
-  }
-}
-
-export const db = new MetaArchiveDatabase();
+```text
+[ZIP FB ou IG]
+      │
+      ▼
+[ArchiveContext] ──startIngestion──► [ingestion.worker]
+      │                                      │
+      │                                      ▼
+      │                               clearPlatformData(platform)
+      │                                      │
+      │                                      ▼
+      │                               parse + normalize → Dexie batches
+      │                                      │
+      ├──── fileHandles (FSA, par plateforme)
+      │
+      ▼
+[Dashboard | Messages | Gallery | Ads | Settings]
+      │
+      └── getZipFile(platform) → zipMediaResolver (Blob URL)
 ```
 
-### 3.3 Tables et Index
-
-| Table         | Clé primaire | Index principaux                              | Usage                                         |
-| ------------- | ------------ | --------------------------------------------- | --------------------------------------------- |
-| conversations | id           | platform, lastMessageTimestamp, *participants | Liste des discussions et filtres participants |
-| messages      | id           | [conversationId+timestamp], isFromUser        | Pagination chronologique d'un chat            |
-| posts         | id           | timestamp, [platform+type]                    | Timeline globale et filtres de type           |
-| media         | id           | relativePath, type, timestamp                 | Résolution rapide des médias                  |
-| adTargeting   | id           | platform                                      | Consultation du profilage publicitaire        |
-
-### 3.4 Stratégie de Requêtes
-
-- Chargement messages récents par conversation via `[conversationId+timestamp]` en ordre inverse.
-- Recherche locale conversationnelle immédiate.
-- Recherche globale asynchrone (worker) pour les archives lourdes.
-
-Exemple:
-
-```typescript
-export async function getLatestMessages(conversationId: string, limit = 50) {
-  return db.messages
-    .where('[conversationId+timestamp]')
-    .between([conversationId, Dexie.minKey], [conversationId, Dexie.maxKey])
-    .reverse()
-    .limit(limit)
-    .toArray();
-}
-```
+- **Premier import** : écran `ImportScreen` (drop / picker).
+- **Archive déjà en session** : shell `Sidebar` + `Header` + module actif.
+- **Second import / remplacement** : slots dans la sidebar et les paramètres ; overlay `IngestOverlay` sans renvoyer vers le landing.
+- **Mobile** : drawer latéral (`ShellContext`), pas de barre de navigation basse.
 
 ---
 
-## 🚀 Section 4 - Catalogue des Fonctionnalités MVP
+## 4. Multi-archives (additif)
 
-### 4.1 Vue d'Ensemble
+Facebook et Instagram coexistent dans la même base.
 
-Le MVP est composé de 4 modules:
+| Mécanisme | Rôle |
+| --- | --- |
+| `db.clearPlatformData(platform)` | Efface seulement FB **ou** IG avant réimport |
+| Handles FSA `archive-zip-facebook` / `archive-zip-instagram` | Réattacher les médias après F5 (Chrome/Edge) |
+| `rebuildSessionStats` / `meta_capsule_session` | Session agrégée + métadonnées par plateforme |
+| `getZipFile(platform)` | Routage médias galerie / messages / avatar |
+| `ArchivesSlots` | Ajouter, remplacer (confirm), retirer, recharger médias |
 
-1. 📊 Dashboard
-2. 💬 Messagerie
-3. 🖼️ Galerie médias
-4. 🎯 Transparence publicitaire
+Remplacer une plateforme ne touche pas l’autre. Un ZIP manquant pour une plateforme n’empêche pas la consultation texte / l’autre ZIP.
 
-### 4.2 Module Dashboard 📊
-
-Objectif: donner une vue de synthèse neutre et immédiate.
-
-Fonctionnalités:
-
-- KPIs globaux (taille archive, nombre messages, nombre médias, période couverte).
-- Frise/graphique d'activité par année et mois.
-- Indicateur de statut local/hors-ligne visible en permanence.
-
-### 4.3 Module Messagerie 💬
-
-Objectif: relire les conversations Messenger et IG Direct de manière fluide.
-
-Fonctionnalités:
-
-- Liste des conversations triées par dernier message.
-- Recherche par participant.
-- Vue chat en lecture seule avec pagination infinie.
-- Recherche textuelle dans la conversation active.
-
-### 4.4 Module Galerie Médias 🖼️
-
-Objectif: retrouver photos/vidéos/stories par chronologie.
-
-Fonctionnalités:
-
-- Grille adaptive regroupée par mois/année.
-- Filtres de types (photos, vidéos, stories, médias de chat).
-- Lightbox avec métadonnées essentielles.
-- Export individuel d'un média.
-
-### 4.5 Module Transparence Publicitaire 🎯
-
-Objectif: rendre visibles les signaux de profilage contenus dans l'archive.
-
-Fonctionnalités:
-
-- Liste des centres d'intérêt associés.
-- Liste des annonceurs ayant importé les coordonnées.
-- Historique des interactions pub lorsque disponible.
-
-### 4.6 Scope MVP vs Évolutions
-
-| Domaine    | MVP v1                     | Évolutions v2+                         |
-| ---------- | -------------------------- | -------------------------------------- |
-| Ingestion  | 1 archive ZIP              | Fusion multi-archives                  |
-| Messagerie | Recherche par conversation | Full-text global multi-conversations   |
-| Stats      | Courbes d'activité de base | Analyses sémantiques avancées          |
-| Export     | Export média unitaire      | Exports structurés (Markdown/PDF/CSV) |
+Fichiers clés : [`src/context/ArchiveContext.tsx`](src/context/ArchiveContext.tsx), [`src/utils/sessionStats.ts`](src/utils/sessionStats.ts), [`src/utils/fileSystemAccess.ts`](src/utils/fileSystemAccess.ts), [`src/components/ArchivesSlots.tsx`](src/components/ArchivesSlots.tsx).
 
 ---
 
-## 🎨 Section 5 - Ergonomie UI/UX et Maquettes Textuelles
+## 5. Pipeline d’ingestion
 
-### 5.1 Principes UX
-
-- Minimalisme intentionnel: peu d'éléments, hiérarchie claire.
-- Lisibilité d'abord: textes compréhensibles et actions évidentes.
-- Feedback immédiat: progression d'import, états clairs, erreurs actionnables.
-- Lecture seule explicite pour éviter toute ambiguïté.
-
-### 5.2 Navigation Générale
-
-Desktop:
-
-- Barre latérale gauche (Dashboard, Messages, Galerie, Publicité, Paramètres).
-- En-tête global (état local/hors-ligne, archive active, recherche contextuelle).
-- Zone de contenu principale.
-
-Mobile:
-
-- Navigation simplifiée en barre basse.
-- Priorité aux vues liste/detail.
-
-### 5.3 Maquettes Textuelles
-
-#### Écran Importation
+Exécuté dans [`src/workers/ingestion.worker.ts`](src/workers/ingestion.worker.ts) pour ne pas bloquer l’UI.
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│                          📂 Meta Capsule                               │
-│              Redécouvrez vos données Meta en 100% local                │
-│                                                                         │
-│   ┌─────────────────────────────────────────────────────────────────┐   │
-│   │                 Glissez votre archive .zip ici                 │   │
-│   │                               ou                               │   │
-│   │                   [ 📁 Choisir un fichier ]                    │   │
-│   └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-│   🔒 État: Données locales uniquement - Aucun envoi serveur             │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+[Drop ZIP] → [Worker] → [Détection plateforme] → [clearPlatformData]
+         → [Scan entrées] → [Parse JSON + normalisation] → [bulkPut]
+         → [PROGRESS / COMPLETE / ERROR]
 ```
 
-#### Écran Dashboard
+Points importants :
 
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ 📊 Synthèse                                                            │
-├─────────────────────────────────────────────────────────────────────────┤
-│ [Taille] [Messages] [Médias] [Période]                                 │
-│                                                                         │
-│ 📈 Activité dans le temps                                               │
-│  20K ┤            ▄▄                                                    │
-│  10K ┤      ▄▄   ████  ▄▄                                               │
-│   0  ┼───┬────┬────┬────┬────┬───                                       │
-│      '12 '15  '18  '21  '24  '26                                        │
-│                                                                         │
-│ Raccourcis: Messages | Galerie | Transparence                           │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-#### Écran Messagerie
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ 💬 Messagerie                                                          │
-├────────────────────────────┬────────────────────────────────────────────┤
-│ 🔍 Rechercher un contact    │ Conversation: Alex                         │
-│                            │ 🔍 Recherche dans le chat                  │
-│ • Alex                     │                                            │
-│ • Sophie                   │ Alex: Tu as vu les photos de 2018 ?        │
-│ • Groupe Projet            │ Moi : Oui, elles sont toutes là.           │
-│                            │ [📷 media_2018_04.jpg]                      │
-│                            │                                            │
-│                            │ ... pagination infinie ...                 │
-├────────────────────────────┴────────────────────────────────────────────┤
-│ Mode lecture seule de l'archive                                        │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-#### Écran Galerie
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ 🖼️ Galerie Médias                     [Tous] [Photos] [Vidéos] [Stories] │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Août 2026                                                               │
-│ ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐                                 │
-│ │Photo  │ │Photo  │ │Vidéo▶ │ │Photo  │                                 │
-│ └───────┘ └───────┘ └───────┘ └───────┘                                 │
-│                                                                         │
-│ Juillet 2026                                                            │
-│ ┌───────┐ ┌───────┐ ┌───────┐                                           │
-│ │Photo  │ │Photo  │ │Photo  │                                           │
-│ └───────┘ └───────┘ └───────┘                                           │
-│                                                                         │
-│ Clic média -> visionneuse + métadonnées + export                        │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-#### Écran Publicité
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│ 🎯 Transparence Publicitaire                                           │
-├─────────────────────────────────────────────────────────────────────────┤
-│ Centres d'intérêt associés                                              │
-│ [Technologie] [Musique] [Plein air] [Photo]                            │
-│                                                                         │
-│ Annonceurs ayant importé vos coordonnées                                │
-│ • Entreprise A                                                          │
-│ • Entreprise B                                                          │
-│                                                                         │
-│ Interactions publicitaires disponibles dans l'archive                   │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### 5.4 Design System (Base)
-
-- Couleurs sobres et contraste élevé.
-- Typographie claire sans surcharge décorative.
-- États UI normalisés (succès, info, avertissement, erreur).
-- Composants utilitaires réutilisables: cartes KPI, tableaux, timeline, listes virtuelles, barres de progression.
+- Détection rapide FB / IG (nom de fichier + chemins caractéristiques).
+- Décodage des chaînes Meta (`metaDecoder`) ; timestamps en epoch ms.
+- Indexation médias avec `relativePath` + `source` (`post` | `story` | `message` | `other`).
+- Progression remontée au thread UI ; en multi-archives, `stats` UI sont reconstruites depuis Dexie après `COMPLETE` (agrégats globaux).
 
 ---
 
-## 🗺️ Feuille de Route de Réalisation
+## 6. IndexedDB (Dexie)
 
-Ordre recommandé:
+Base : `MetaArchiveViewerDB` — voir [`src/db/db.ts`](src/db/db.ts) et [`src/db/models.ts`](src/db/models.ts).
 
-1. Finaliser le schéma de données et la DB Dexie.
-2. Implémenter l'ingestion worker + normalisation.
-3. Créer l'ossature UI (navigation + layouts).
-4. Livrer les 4 modules MVP.
-5. Ajouter PWA/offline et tests de robustesse gros volumes.
+| Table | Rôle |
+| --- | --- |
+| `profiles` | Profil par plateforme |
+| `conversations` / `messages` | Messagerie |
+| `posts` | Publications / stories |
+| `media` | Métadonnées médias (+ `source`, index `[source+timestamp]`) |
+| `adTargeting` | Intérêts / annonceurs |
+| `fileHandles` | Handles File System Access (v2 du schéma) |
 
-## ✅ Critères d'Acceptation (v1)
+Identifiants déterministes du type `facebook:…` / `instagram:…`.
 
-- Import d'une archive représentative sans blocage UI.
-- Navigation fluide dans les conversations volumineuses.
-- Consultation des médias sans explosion mémoire.
-- Affichage des données de transparence publicitaire disponibles.
-- Aucune exfiltration de données utilisateur.
+Stratégie requêtes : listes triées par timestamp ; messages d’une conversation via `[conversationId+timestamp]` ; filtres galerie côté UI sur le jeu de métadonnées chargé.
+
+---
+
+## 7. Médias
+
+Règle : **ne jamais** charger tout le ZIP en mémoire.
+
+1. L’ingestion enregistre chemin + type + source + timestamp.
+2. À l’affichage, [`zipMediaResolver.ts`](src/utils/zipMediaResolver.ts) ouvre le `File` ZIP de la bonne plateforme, extrait l’entrée, met en cache une Blob URL.
+3. `revokeAllMediaUrls` au reset / changement d’archive.
+
+Sans handle FSA (ou permission refusée) : données texte OK ; pastille « ZIP manquant » / actions de rechargement dans le header et les slots.
+
+---
+
+## 8. Modules UI
+
+| Module | Comportement actuel |
+| --- | --- |
+| **Synthèse** | KPIs, plage de dates, activité annuelle, carte profil |
+| **Messagerie** | Liste + fil de discussion, recherche contact / dans le chat, pièces jointes via ZIP plateforme |
+| **Galerie** | Groupement année-mois, filtres origine / type / plateforme / période, lightbox + export unitaire |
+| **Publicité** | Intérêts et annonceurs issus de l’export, filtres texte |
+| **Paramètres** | Langue, privacy copy, slots archives, purge totale, liens support |
+
+i18n : [`src/i18n/fr.ts`](src/i18n/fr.ts) / [`en.ts`](src/i18n/en.ts) via `LanguageContext`.
+
+---
+
+## 9. Non livré (volontairement)
+
+- PWA / service worker / OPFS dédié
+- Virtualisation agressive de toutes les listes
+- Full-text global multi-conversations
+- Exports structurés (Markdown / PDF / CSV)
+- Support HTML Meta en priorité (JSON d’abord)
+
+---
+
+## 10. Évolutions possibles
+
+- Mode offline installable (PWA)
+- Virtualisation galerie / messages pour très gros volumes
+- Recherche plein texte asynchrone
+- Exports structurés et packs de souvenirs
+- Tests de charge sur exports multi-dizaines de Go
+
+---
+
+## Critères de santé (MVP)
+
+- Import d’une archive représentative sans figer l’UI
+- FB + IG coexistants ; replace unilatéral
+- Navigation messages / galerie sans explosion mémoire
+- Transparence pub quand les fichiers sont présents dans l’export
+- Aucune exfiltration des données utilisateur par l’application
