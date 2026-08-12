@@ -72,40 +72,54 @@ function toEpochMs(value: unknown): number | null {
   return value < 1e12 ? Math.round(value * 1000) : Math.round(value);
 }
 
+/**
+ * Detect FB vs IG from ZIP name + entry paths.
+ * Filename prefixes from Meta (`facebook-…`, `instagram-…`) always win —
+ * never override them with weak path heuristics (FB exports contain
+ * `personal_information/` and `your_activity` substrings that look like IG).
+ */
 function detectPlatformQuick(
   fileName: string,
   entries: Entry[]
 ): 'facebook' | 'instagram' {
   const lowerName = fileName.toLowerCase();
-  if (lowerName.startsWith('instagram-') || lowerName.includes('instagram')) {
+
+  // Meta download names: facebook-<user>-YYYY-… / instagram-<user>-YYYY-…
+  if (lowerName.startsWith('instagram-') || /(^|[_\s/-])instagram([_\s/-]|$)/i.test(lowerName)) {
     return 'instagram';
   }
-  if (lowerName.startsWith('facebook-') || lowerName.includes('facebook')) {
+  if (lowerName.startsWith('facebook-') || /(^|[_\s/-])facebook([_\s/-]|$)/i.test(lowerName)) {
     return 'facebook';
   }
 
-  for (const entry of entries) {
-    const f = entry.filename.toLowerCase();
-    if (
-      f.includes('personal_information.json') ||
-      f.includes('instagram_profile') ||
-      f.includes('your_instagram_activity')
-    ) {
-      return 'instagram';
-    }
-  }
+  let igScore = 0;
+  let fbScore = 0;
 
   for (const entry of entries) {
-    const f = entry.filename.toLowerCase();
+    const f = entry.filename.toLowerCase().replace(/\\/g, '/');
+
     if (
-      (f.includes('profile_information.json') && !f.includes('instagram')) ||
+      f.includes('your_instagram_activity') ||
+      f.includes('instagram_profile_information') ||
+      /(^|\/)personal_information\.json$/.test(f) ||
+      f.includes('/media/stories/') ||
+      f.includes('/media/posts/')
+    ) {
+      igScore += 1;
+    }
+
+    if (
       f.includes('your_facebook_activity') ||
-      f.includes('/posts/your_posts')
+      (f.includes('/profile_information/profile_information.json') && !f.includes('instagram')) ||
+      f.includes('/posts/your_posts') ||
+      f.includes('messages/inbox/') && f.includes('your_facebook')
     ) {
-      return 'facebook';
+      fbScore += 1;
     }
   }
 
+  if (igScore > fbScore) return 'instagram';
+  if (fbScore > igScore) return 'facebook';
   return 'facebook';
 }
 
@@ -241,8 +255,19 @@ self.onmessage = async (event: MessageEvent) => {
       const rawData = JSON.parse(text);
       const data = decodeMetaObj(rawData);
 
-      if (entry.filename.includes('profile_information.json') && !entry.filename.includes('instagram')) {
-        platform = 'facebook';
+      const baseName = entry.filename.split('/').pop() || '';
+      const isFacebookProfile =
+        entry.filename.includes('profile_information.json') &&
+        !entry.filename.includes('instagram') &&
+        platform === 'facebook';
+      const isInstagramProfile =
+        platform === 'instagram' &&
+        (baseName === 'personal_information.json' ||
+          baseName === 'profile.json' ||
+          Boolean(data.profile_user) ||
+          Array.isArray(data.label_values));
+
+      if (isFacebookProfile) {
         const profile = data.profile_v2 || data;
         ownerName = profile.name?.full_name || ownerName;
 
@@ -258,13 +283,7 @@ self.onmessage = async (event: MessageEvent) => {
             ? `${profile.birthday.year}-${profile.birthday.month}-${profile.birthday.day}`
             : undefined
         });
-      } else if (
-        entry.filename.split('/').pop() === 'personal_information.json' ||
-        entry.filename.includes('personal_information.json') ||
-        entry.filename.endsWith('profile.json') ||
-        data.profile_user
-      ) {
-        platform = 'instagram';
+      } else if (isInstagramProfile) {
         const profileUser =
           data.profile_user?.[0]?.string_map_data ||
           data.profile_user?.[0] ||
@@ -297,14 +316,11 @@ self.onmessage = async (event: MessageEvent) => {
       }
     }
 
-    // Fallback: Instagram export ZIP names are often `instagram-<username>-YYYY-...`
-    if (platform === 'instagram' || String(file?.name || '').toLowerCase().includes('instagram')) {
-      platform = 'instagram';
-      if (!profileDraft.username) {
-        const fromZip = String(file?.name || '').match(/^instagram-([^/\\]+?)-\d{4}/i);
-        if (fromZip?.[1]) {
-          profileDraft.username = fromZip[1];
-        }
+    // Fill IG username from ZIP name when needed — do not flip platform
+    if (platform === 'instagram' && !profileDraft.username) {
+      const fromZip = String(file?.name || '').match(/^instagram-([^/\\]+?)-\d{4}/i);
+      if (fromZip?.[1]) {
+        profileDraft.username = fromZip[1];
       }
     }
 
@@ -325,17 +341,7 @@ self.onmessage = async (event: MessageEvent) => {
     }
 
     if (!ownerName) {
-      const hasIG = entries.some(
-        (e) =>
-          e.filename.includes('instagram') ||
-          e.filename.includes('your_instagram_activity') ||
-          e.filename.includes('your_activity')
-      );
-      platform = hasIG ? 'instagram' : 'facebook';
-    } else if (
-      entries.some((e) => e.filename.includes('your_instagram_activity') || e.filename.startsWith('media/stories/'))
-    ) {
-      platform = 'instagram';
+      ownerName = platform === 'instagram' ? 'Instagram' : 'Facebook';
     }
 
     let processedCount = 0;

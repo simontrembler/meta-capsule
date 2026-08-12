@@ -29,8 +29,11 @@ export type { ArchivePlatform, IngestionStats, ZipAccessState };
 
 function guessPlatformFromZipName(name: string): ArchivePlatform | null {
   const n = name.toLowerCase();
-  if (n.includes('instagram')) return 'instagram';
-  if (n.includes('facebook')) return 'facebook';
+  // Prefer Meta's official download prefixes so we never flip FB ↔ IG on weak matches
+  if (n.startsWith('instagram-')) return 'instagram';
+  if (n.startsWith('facebook-')) return 'facebook';
+  if (/(^|[_\s/-])instagram([_\s/-]|$)/i.test(n)) return 'instagram';
+  if (/(^|[_\s/-])facebook([_\s/-]|$)/i.test(n)) return 'facebook';
   return null;
 }
 
