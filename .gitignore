@@ -4,6 +4,7 @@ node_modules/
 # Build
 dist/
 dist-ssr/
+.vite/
 
 # Local / editor
 .DS_Store
