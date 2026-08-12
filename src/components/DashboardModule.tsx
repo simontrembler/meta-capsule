@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { UserProfile } from '../db/models';
 import { MessageSquare, Image, Award, Calendar, User, Mail, Phone, ArrowRight } from 'lucide-react';
+import { ProfileAvatar } from './ProfileAvatar';
 
 interface DashboardStats {
   totalMessages: number;
@@ -296,9 +297,12 @@ export const DashboardModule: React.FC = () => {
               <div className="space-y-4">
                 {/* Profile Header */}
                 <div className="flex items-center gap-3 pb-4 border-b border-slate-50">
-                  <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-lg">
-                    {profile.name.charAt(0)}
-                  </div>
+                  <ProfileAvatar
+                    name={profile.name}
+                    relativePath={profile.profilePicture}
+                    zipFile={zipFile}
+                    size="md"
+                  />
                   <div>
                     <h4 className="font-bold text-slate-800 leading-none mb-1">{profile.name}</h4>
                     {displayUsername ? (

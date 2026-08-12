@@ -1,12 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
+import { db } from '../db/db';
+import type { UserProfile } from '../db/models';
+import { ProfileAvatar } from './ProfileAvatar';
 import { LayoutDashboard, MessageSquare, Image, Award, Settings, LogOut, Package } from 'lucide-react';
 import type { TranslationKey } from '../i18n';
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, resetArchive, stats } = useArchive();
+  const { activeTab, setActiveTab, resetArchive, stats, zipFile } = useArchive();
   const { t } = useLanguage();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!stats?.platform) {
+        setProfile(null);
+        return;
+      }
+      const row = await db.profiles.get(`${stats.platform}:profile`);
+      if (!cancelled) setProfile(row ?? null);
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [stats?.platform]);
 
   const menuItems = [
     { id: 'dashboard' as const, labelKey: 'nav.dashboard' as TranslationKey, icon: LayoutDashboard },
@@ -51,12 +71,20 @@ export const Sidebar: React.FC = () => {
 
       <div className="p-4 border-t border-slate-50 space-y-4">
         {stats && (
-          <div className="px-4 py-3 bg-slate-50/50 rounded-xl border border-slate-100">
-            <p className="text-xs text-slate-400 font-medium leading-none mb-1">{t('app.archiveOf')}</p>
-            <p className="font-bold text-slate-800 text-sm truncate">{stats.ownerName || t('common.user')}</p>
-            <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-brand-100 text-brand-700 text-[10px] font-bold uppercase tracking-wider">
-              {stats.platform}
-            </span>
+          <div className="px-4 py-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center gap-3">
+            <ProfileAvatar
+              name={stats.ownerName || t('common.user')}
+              relativePath={profile?.profilePicture}
+              zipFile={zipFile}
+              size="sm"
+            />
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400 font-medium leading-none mb-1">{t('app.archiveOf')}</p>
+              <p className="font-bold text-slate-800 text-sm truncate">{stats.ownerName || t('common.user')}</p>
+              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-brand-100 text-brand-700 text-[10px] font-bold uppercase tracking-wider">
+                {stats.platform}
+              </span>
+            </div>
           </div>
         )}
 
