@@ -135,12 +135,61 @@ self.onmessage = async (event: MessageEvent) => {
       (e) =>
         !e.directory &&
         (e.filename.includes('profile_information.json') ||
-          e.filename.includes('personal_information.json') ||
+          e.filename.endsWith('/personal_information.json') ||
+          e.filename.endsWith('personal_information.json') ||
           e.filename.includes('instagram_profile_information.json') ||
           e.filename.endsWith('profile.json'))
     );
 
+    // Prefer the rich personal_information.json (has Username/Name) over
+    // instagram_profile_information.json (login metadata only in newer exports).
+    profileEntries.sort((a, b) => {
+      const score = (name: string) => {
+        if (name.endsWith('/personal_information.json') || name.endsWith('personal_information.json')) {
+          // Exact file, not the parent folder coincidence
+          if (name.split('/').pop() === 'personal_information.json') return 0;
+        }
+        if (name.includes('profile_user') || name.endsWith('profile.json')) return 1;
+        if (name.includes('profile_information.json') && !name.includes('instagram')) return 2;
+        return 5;
+      };
+      return score(a.filename) - score(b.filename);
+    });
+
+    let profileDraft: {
+      name: string;
+      username: string;
+      bio?: string;
+      email?: string;
+      phoneNumber?: string;
+      gender?: string;
+      dateOfBirth?: string;
+      profilePicture?: string;
+    } = {
+      name: '',
+      username: ''
+    };
+
+    const mergeProfileField = <K extends keyof typeof profileDraft>(
+      key: K,
+      value: (typeof profileDraft)[K] | undefined | null
+    ) => {
+      if (value === undefined || value === null) return;
+      if (typeof value === 'string' && value.trim() === '') return;
+      if (!profileDraft[key]) {
+        profileDraft[key] = value;
+      }
+    };
+
     for (const entry of profileEntries) {
+      // Skip metadata-only IG file — it overwrote Username with empty in newer exports
+      if (
+        entry.filename.includes('instagram_profile_information.json') &&
+        !entry.filename.endsWith('/personal_information.json')
+      ) {
+        continue;
+      }
+
       const text = await (entry as Entry & { getData: Function }).getData(new TextWriter());
       const rawData = JSON.parse(text);
       const data = decodeMetaObj(rawData);
@@ -148,7 +197,7 @@ self.onmessage = async (event: MessageEvent) => {
       if (entry.filename.includes('profile_information.json') && !entry.filename.includes('instagram')) {
         platform = 'facebook';
         const profile = data.profile_v2 || data;
-        ownerName = profile.name?.full_name || '';
+        ownerName = profile.name?.full_name || ownerName;
 
         await db.profiles.put({
           id: 'facebook:profile',
@@ -163,9 +212,10 @@ self.onmessage = async (event: MessageEvent) => {
             : undefined
         });
       } else if (
-        entry.filename.includes('instagram_profile_information.json') ||
+        entry.filename.split('/').pop() === 'personal_information.json' ||
         entry.filename.includes('personal_information.json') ||
-        entry.filename.includes('profile.json')
+        entry.filename.endsWith('profile.json') ||
+        data.profile_user
       ) {
         platform = 'instagram';
         const profileUser =
@@ -173,41 +223,58 @@ self.onmessage = async (event: MessageEvent) => {
           data.profile_user?.[0] ||
           data;
 
-        // Newer IG exports use label_values
-        let name = profileUser.Name?.value || '';
-        let username = profileUser.Username?.value || '';
-        let bio = profileUser.Biography?.value;
-        let email = profileUser.Email?.value;
-        let phoneNumber = profileUser['Phone Number']?.value;
-        let gender = profileUser.Gender?.value;
-        let dateOfBirth = profileUser['Date of birth']?.value;
+        mergeProfileField('name', profileUser.Name?.value || '');
+        mergeProfileField('username', profileUser.Username?.value || '');
+        mergeProfileField('bio', profileUser.Bio?.value || profileUser.Biography?.value);
+        mergeProfileField('email', profileUser.Email?.value);
+        mergeProfileField('phoneNumber', profileUser['Phone Number']?.value);
+        mergeProfileField('gender', profileUser.Gender?.value);
+        mergeProfileField('dateOfBirth', profileUser['Date of birth']?.value);
 
-        if (!name && Array.isArray(data.label_values)) {
+        const photoUri = data.profile_user?.[0]?.media_map_data?.['Profile Photo']?.uri;
+        mergeProfileField('profilePicture', photoUri);
+
+        if (Array.isArray(data.label_values)) {
           const byLabel = (label: string) =>
             data.label_values.find((lv: any) => lv.label === label)?.value as string | undefined;
-          name = byLabel('Name') || '';
-          username = byLabel('Username') || '';
-          bio = byLabel('Bio') || bio;
-          email = byLabel('Email') || email;
-          phoneNumber = byLabel('Phone Number') || phoneNumber;
-          gender = byLabel('Gender') || gender;
-          dateOfBirth = byLabel('Date of birth') || dateOfBirth;
+          mergeProfileField('name', byLabel('Name'));
+          mergeProfileField('username', byLabel('Username'));
+          mergeProfileField('bio', byLabel('Bio'));
+          mergeProfileField('email', byLabel('Email'));
+          mergeProfileField('phoneNumber', byLabel('Phone Number') || byLabel('Phone number'));
+          mergeProfileField('gender', byLabel('Gender'));
+          mergeProfileField('dateOfBirth', byLabel('Date of birth'));
         }
 
-        ownerName = name || ownerName;
-
-        await db.profiles.put({
-          id: 'instagram:profile',
-          platform: 'instagram',
-          name: ownerName || username || 'Instagram',
-          username: username || '',
-          bio,
-          email,
-          phoneNumber,
-          gender,
-          dateOfBirth
-        });
+        ownerName = profileDraft.name || ownerName;
       }
+    }
+
+    // Fallback: Instagram export ZIP names are often `instagram-<username>-YYYY-...`
+    if (platform === 'instagram' || String(file?.name || '').toLowerCase().includes('instagram')) {
+      platform = 'instagram';
+      if (!profileDraft.username) {
+        const fromZip = String(file?.name || '').match(/^instagram-([^/\\]+?)-\d{4}/i);
+        if (fromZip?.[1]) {
+          profileDraft.username = fromZip[1];
+        }
+      }
+    }
+
+    if (platform === 'instagram') {
+      ownerName = profileDraft.name || ownerName || profileDraft.username || 'Instagram';
+      await db.profiles.put({
+        id: 'instagram:profile',
+        platform: 'instagram',
+        name: ownerName,
+        username: profileDraft.username || '',
+        bio: profileDraft.bio,
+        email: profileDraft.email,
+        phoneNumber: profileDraft.phoneNumber,
+        gender: profileDraft.gender,
+        dateOfBirth: profileDraft.dateOfBirth,
+        profilePicture: profileDraft.profilePicture
+      });
     }
 
     if (!ownerName) {

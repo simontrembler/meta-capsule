@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useArchive } from '../context/ArchiveContext';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { Conversation, Message, MessageAttachment } from '../db/models';
 import { getMediaBlobUrl } from '../utils/zipMediaResolver';
@@ -8,6 +9,7 @@ import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic } from 'lu
 
 // Helper component to render media attachments dynamically
 const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | null }> = ({ attachment, zipFile }) => {
+  const { t } = useLanguage();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +48,7 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
     return (
       <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-xl text-xs text-slate-500 max-w-xs border border-slate-200">
         <AlertCircle size={14} className="text-amber-500 shrink-0" />
-        <span>Re-sélectionnez l'archive ZIP pour voir le média</span>
+        <span>{t('messages.reselectZip')}</span>
       </div>
     );
   }
@@ -63,7 +65,7 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
     return (
       <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-xs text-red-600 max-w-xs border border-red-100">
         <AlertCircle size={14} className="shrink-0" />
-        <span>Erreur de chargement du média</span>
+        <span>{t('messages.mediaError')}</span>
       </div>
     );
   }
@@ -109,6 +111,7 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
 
 export const MessagingModule: React.FC = () => {
   const { zipFile } = useArchive();
+  const { t, dateLocale } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
@@ -301,7 +304,7 @@ export const MessagingModule: React.FC = () => {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Rechercher un contact..."
+              placeholder={t('messages.searchContact')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 focus:border-brand-300 focus:bg-white text-sm font-semibold outline-none transition-all"
@@ -339,17 +342,17 @@ export const MessagingModule: React.FC = () => {
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <h4 className="font-bold text-slate-800 text-sm truncate">{conv.title}</h4>
                       <span className="text-[10px] text-slate-400 font-semibold shrink-0">
-                        {new Date(conv.lastMessageTimestamp).toLocaleDateString('fr-FR', {
+                        {new Date(conv.lastMessageTimestamp).toLocaleDateString(dateLocale, {
                           day: 'numeric',
                           month: 'short'
                         })}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 truncate font-medium">
-                      {conv.lastMessageText || 'Aucun message'}
+                      {conv.lastMessageText || t('messages.noMessage')}
                     </p>
                     <span className="inline-block mt-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      {conv.messageCount.toLocaleString('fr-FR')} messages
+                      {t('messages.messagesCount', { count: conv.messageCount.toLocaleString(dateLocale) })}
                     </span>
                   </div>
                 </button>
@@ -358,7 +361,7 @@ export const MessagingModule: React.FC = () => {
           ) : (
             <div className="p-8 text-center">
               <MessageSquare size={32} className="text-slate-300 mx-auto mb-2" />
-              <p className="text-slate-400 text-sm font-medium">Aucune discussion trouvée</p>
+              <p className="text-slate-400 text-sm font-medium">{t('messages.noConversations')}</p>
             </div>
           )}
         </div>
@@ -395,7 +398,7 @@ export const MessagingModule: React.FC = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Rechercher dans ce chat..."
+                    placeholder={t('messages.searchInChat')}
                     value={chatSearchQuery}
                     onChange={(e) => setChatSearchQuery(e.target.value)}
                     className="pl-3 pr-8 py-1.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 focus:border-brand-300 focus:bg-white text-xs font-semibold outline-none transition-all w-48"
@@ -414,7 +417,7 @@ export const MessagingModule: React.FC = () => {
                   type="submit"
                   className="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-600/10 transition-colors"
                 >
-                  Rechercher
+                  {t('messages.search')}
                 </button>
               </form>
             </div>
@@ -435,9 +438,9 @@ export const MessagingModule: React.FC = () => {
               {/* Search Results Header */}
               {isSearchingChat && (
                 <div className="sticky top-0 z-10 bg-brand-50 border border-brand-100 rounded-xl p-3 text-center text-xs text-brand-800 font-bold shadow-sm flex items-center justify-between">
-                  <span>{searchResults.length} résultats trouvés pour "{chatSearchQuery}"</span>
+                  <span>{t('messages.searchResults', { count: searchResults.length, query: chatSearchQuery })}</span>
                   <button onClick={clearChatSearch} className="text-brand-600 hover:text-brand-800 underline">
-                    Retour au chat complet
+                    {t('messages.backToChat')}
                   </button>
                 </div>
               )}
@@ -455,7 +458,7 @@ export const MessagingModule: React.FC = () => {
                     {showDateDivider && (
                       <div className="flex justify-center my-4">
                         <span className="px-3 py-1 rounded-full bg-slate-200/50 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
-                          {new Date(msg.timestamp).toLocaleDateString('fr-FR', {
+                          {new Date(msg.timestamp).toLocaleDateString(dateLocale, {
                             weekday: 'long',
                             day: 'numeric',
                             month: 'long',
@@ -504,7 +507,7 @@ export const MessagingModule: React.FC = () => {
                                 <span
                                   key={rIdx}
                                   className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-slate-50 border border-slate-100 text-xs shadow-sm"
-                                  title={`Réagi par ${r.sender}`}
+                                  title={t('messages.reactedBy', { name: r.sender })}
                                 >
                                   {r.reaction}
                                 </span>
@@ -512,7 +515,7 @@ export const MessagingModule: React.FC = () => {
                             </div>
                           )}
                           <span className={`text-[9px] font-semibold block ${isMe ? 'text-brand-200 ml-auto' : 'text-slate-400 ml-auto'}`}>
-                            {new Date(msg.timestamp).toLocaleTimeString('fr-FR', {
+                            {new Date(msg.timestamp).toLocaleTimeString(dateLocale, {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}
@@ -530,9 +533,9 @@ export const MessagingModule: React.FC = () => {
             <div className="w-16 h-16 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center mx-auto mb-4">
               <MessageSquare size={28} />
             </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-1">Vos conversations de tchat</h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">{t('messages.emptyTitle')}</h3>
             <p className="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed">
-              Sélectionnez une discussion dans la liste latérale pour relire vos messages et revivre vos moments nostalgiques.
+              {t('messages.emptyBody')}
             </p>
           </div>
         )}

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { AdTargeting } from '../db/models';
 import { Target, Users, Search, Sparkles, ShieldCheck } from 'lucide-react';
 
 export const AdTransparencyModule: React.FC = () => {
+  const { t } = useLanguage();
   const [adData, setAdData] = useState<AdTargeting[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'facebook' | 'instagram'>('all');
   const [interestSearch, setInterestSearch] = useState('');
@@ -30,7 +32,7 @@ export const AdTransparencyModule: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-5rem)]">
         <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-brand-600 animate-spin mb-4"></div>
-        <p className="text-slate-500 text-sm font-medium">Chargement des données publicitaires...</p>
+        <p className="text-slate-500 text-sm font-medium">{t('ads.loading')}</p>
       </div>
     );
   }
@@ -76,18 +78,18 @@ export const AdTransparencyModule: React.FC = () => {
         <div className="relative z-10 space-y-3">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-brand-500 text-white text-xs font-bold uppercase tracking-wider">
-              Transparence Algorithmique
+              {t('ads.badge')}
             </span>
             <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
               <ShieldCheck size={14} />
-              <span>Données 100% hors-ligne</span>
+              <span>{t('ads.offline')}</span>
             </div>
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight">
-            Comment Meta vous profile-t-il ?
+            {t('ads.title')}
           </h1>
           <p className="text-slate-300 text-sm max-w-3xl leading-relaxed">
-            Les algorithmes de Facebook et Instagram analysent en permanence vos clics, vos mentions "J'aime" et votre temps d'écran pour dresser votre profil publicitaire. Cette page vous révèle les <strong>centres d'intérêt</strong> qui vous ont été attribués, ainsi que la liste des <strong>annonceurs</strong> qui possèdent vos coordonnées personnelles (e-mail, téléphone) dans leurs bases de ciblage.
+            {t('ads.body')}
           </p>
         </div>
       </div>
@@ -102,7 +104,7 @@ export const AdTransparencyModule: React.FC = () => {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          Toutes plateformes
+          {t('ads.platform.all')}
         </button>
         <button
           onClick={() => setSelectedPlatform('facebook')}
@@ -135,9 +137,9 @@ export const AdTransparencyModule: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 text-brand-600 mb-1">
                 <Target size={20} />
-                <h3 className="text-lg font-bold text-slate-800">Centres d'intérêt ({interests.length})</h3>
+                <h3 className="text-lg font-bold text-slate-800">{t('ads.interestsTitle', { count: interests.length })}</h3>
               </div>
-              <p className="text-xs text-slate-400">Thématiques associées à votre profil par l'IA de Meta</p>
+              <p className="text-xs text-slate-400">{t('ads.interestsSubtitle')}</p>
             </div>
           </div>
 
@@ -146,7 +148,7 @@ export const AdTransparencyModule: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input
               type="text"
-              placeholder="Filtrer les centres d'intérêt..."
+              placeholder={t('ads.interestsFilter')}
               value={interestSearch}
               onChange={(e) => setInterestSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 focus:border-brand-300 focus:bg-white text-xs font-semibold outline-none transition-all"
@@ -170,7 +172,7 @@ export const AdTransparencyModule: React.FC = () => {
             ) : (
               <div className="text-center py-12">
                 <Target size={32} className="text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-400 text-xs font-semibold">Aucun centre d'intérêt trouvé</p>
+                <p className="text-slate-400 text-xs font-semibold">{t('ads.interestsEmpty')}</p>
               </div>
             )}
           </div>
@@ -182,9 +184,9 @@ export const AdTransparencyModule: React.FC = () => {
             <div>
               <div className="flex items-center gap-2 text-slate-700 mb-1">
                 <Users size={20} />
-                <h3 className="text-lg font-bold text-slate-800">Annonceurs ciblant vos coordonnées ({advertisers.length})</h3>
+                <h3 className="text-lg font-bold text-slate-800">{t('ads.advertisersTitle', { count: advertisers.length })}</h3>
               </div>
-              <p className="text-xs text-slate-400">Entreprises ayant importé vos coordonnées (e-mail, téléphone) pour vous cibler</p>
+              <p className="text-xs text-slate-400">{t('ads.advertisersSubtitle')}</p>
             </div>
           </div>
 
@@ -193,7 +195,7 @@ export const AdTransparencyModule: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input
               type="text"
-              placeholder="Filtrer les annonceurs..."
+              placeholder={t('ads.advertisersFilter')}
               value={advertiserSearch}
               onChange={(e) => setAdvertiserSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-200 focus:border-brand-300 focus:bg-white text-xs font-semibold outline-none transition-all"
@@ -207,14 +209,14 @@ export const AdTransparencyModule: React.FC = () => {
                 <div key={idx} className="py-3 flex items-center justify-between gap-4">
                   <span className="text-xs font-bold text-slate-700 truncate">{advertiser}</span>
                   <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-wider shrink-0">
-                    Ciblage direct
+                    {t('ads.directTargeting')}
                   </span>
                 </div>
               ))
             ) : (
               <div className="text-center py-12">
                 <Users size={32} className="text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-400 text-xs font-semibold">Aucun annonceur trouvé</p>
+                <p className="text-slate-400 text-xs font-semibold">{t('ads.advertisersEmpty')}</p>
               </div>
             )}
           </div>

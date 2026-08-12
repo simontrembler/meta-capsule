@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useArchive } from '../context/ArchiveContext';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { UserProfile } from '../db/models';
 import { MessageSquare, Image, Award, Calendar, User, Mail, Phone, ArrowRight } from 'lucide-react';
@@ -13,10 +14,15 @@ interface DashboardStats {
 }
 
 export const DashboardModule: React.FC = () => {
-  const { stats, setActiveTab } = useArchive();
+  const { stats, setActiveTab, zipFile } = useArchive();
+  const { t, dateLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dbStats, setDbStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const displayUsername =
+    profile?.username ||
+    (zipFile?.name.match(/^instagram-([^/\\]+?)-\d{4}/i)?.[1] ?? '');
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -52,7 +58,7 @@ export const DashboardModule: React.FC = () => {
         let dateRange = null;
         if (startTimestamp !== Infinity && endTimestamp !== 0) {
           const formatDate = (ts: number) => {
-            return new Date(ts).toLocaleDateString('fr-FR', {
+            return new Date(ts).toLocaleDateString(dateLocale, {
               day: 'numeric',
               month: 'long',
               year: 'numeric'
@@ -102,13 +108,13 @@ export const DashboardModule: React.FC = () => {
     };
 
     loadDashboardData();
-  }, [stats]);
+  }, [stats, dateLocale]);
 
   if (isLoading || !dbStats) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-5rem)]">
         <div className="w-12 h-12 rounded-full border-4 border-slate-100 border-t-brand-600 animate-spin mb-4"></div>
-        <p className="text-slate-500 text-sm font-medium">Génération de votre synthèse personnalisée...</p>
+        <p className="text-slate-500 text-sm font-medium">{t('dashboard.loading')}</p>
       </div>
     );
   }
@@ -129,17 +135,15 @@ export const DashboardModule: React.FC = () => {
         </div>
         <div className="relative z-10 space-y-2">
           <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider">
-            Tableau de bord
+            {t('dashboard.badge')}
           </span>
           <h1 className="text-3xl font-extrabold tracking-tight">
-            Bonjour, {profile?.name || stats?.ownerName || 'Explorateur'} !
+            {t('dashboard.hello', { name: profile?.name || stats?.ownerName || t('common.explorer') })}
           </h1>
           <p className="text-brand-100 text-sm md:text-base max-w-xl leading-relaxed">
-            Votre archive est prête. {dbStats.dateRange ? (
-              <>Nous avons reconstitué votre historique du <strong className="text-white">{dbStats.dateRange.start}</strong> au <strong className="text-white">{dbStats.dateRange.end}</strong>.</>
-            ) : (
-              'Explorez vos souvenirs numériques en toute confidentialité.'
-            )}
+            {dbStats.dateRange
+              ? t('dashboard.readyRange', { start: dbStats.dateRange.start, end: dbStats.dateRange.end })
+              : t('dashboard.readyGeneric')}
           </p>
         </div>
       </div>
@@ -156,8 +160,8 @@ export const DashboardModule: React.FC = () => {
             <MessageSquare size={24} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Messages échangés</p>
-            <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalMessages.toLocaleString('fr-FR')}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('dashboard.messages')}</p>
+            <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalMessages.toLocaleString(dateLocale)}</h3>
           </div>
           <ArrowRight size={16} className="text-slate-300 group-hover:text-brand-600 shrink-0 transition-colors" />
         </button>
@@ -172,8 +176,8 @@ export const DashboardModule: React.FC = () => {
             <Image size={24} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Photos & Vidéos</p>
-            <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalMedia.toLocaleString('fr-FR')}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('dashboard.media')}</p>
+            <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalMedia.toLocaleString(dateLocale)}</h3>
           </div>
           <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-600 shrink-0 transition-colors" />
         </button>
@@ -184,8 +188,8 @@ export const DashboardModule: React.FC = () => {
             <Award size={24} />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Publications & Stories</p>
-            <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalPosts.toLocaleString('fr-FR')}</h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">{t('dashboard.posts')}</p>
+            <h3 className="text-2xl font-extrabold text-slate-800">{dbStats.totalPosts.toLocaleString(dateLocale)}</h3>
           </div>
         </div>
       </div>
@@ -195,8 +199,8 @@ export const DashboardModule: React.FC = () => {
         
         {/* Activity Chart Section */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col">
-          <h3 className="text-lg font-bold text-slate-800 mb-1">Activité dans le temps</h3>
-          <p className="text-xs text-slate-400 mb-6">Volume cumulé de messages et publications par année</p>
+          <h3 className="text-lg font-bold text-slate-800 mb-1">{t('dashboard.activityTitle')}</h3>
+          <p className="text-xs text-slate-400 mb-6">{t('dashboard.activitySubtitle')}</p>
           
           {dbStats.activityData.length > 0 ? (
             <div className="flex-1 flex flex-col justify-end min-h-[200px]">
@@ -262,7 +266,7 @@ export const DashboardModule: React.FC = () => {
                         '{d.year.substring(2)}
                       </text>
                       {/* Tooltip on Hover */}
-                      <title>{`${d.year} : ${d.count.toLocaleString('fr-FR')} interactions`}</title>
+                      <title>{t('dashboard.interactions', { year: d.year, count: d.count.toLocaleString(dateLocale) })}</title>
                     </g>
                   );
                 })}
@@ -278,7 +282,7 @@ export const DashboardModule: React.FC = () => {
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center border border-dashed border-slate-100 rounded-xl p-8">
-              <p className="text-slate-400 text-sm">Aucune donnée d'activité disponible.</p>
+              <p className="text-slate-400 text-sm">{t('dashboard.noActivity')}</p>
             </div>
           )}
         </div>
@@ -286,7 +290,7 @@ export const DashboardModule: React.FC = () => {
         {/* Profile Details Section */}
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Profil de l'archive</h3>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">{t('dashboard.profileTitle')}</h3>
             
             {profile ? (
               <div className="space-y-4">
@@ -297,7 +301,9 @@ export const DashboardModule: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-slate-800 leading-none mb-1">{profile.name}</h4>
-                    <p className="text-xs text-slate-400">@{profile.username}</p>
+                    {displayUsername ? (
+                      <p className="text-xs text-slate-400">@{displayUsername}</p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -326,7 +332,7 @@ export const DashboardModule: React.FC = () => {
             ) : (
               <div className="text-center py-6">
                 <User size={36} className="text-slate-300 mx-auto mb-2" />
-                <p className="text-slate-400 text-xs">Aucun profil détaillé trouvé dans l'archive.</p>
+                <p className="text-slate-400 text-xs">{t('dashboard.noProfile')}</p>
               </div>
             )}
           </div>
@@ -337,14 +343,14 @@ export const DashboardModule: React.FC = () => {
               onClick={() => setActiveTab('messages')}
               className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-brand-50 hover:text-brand-700 text-slate-600 text-xs font-bold transition-all duration-150 group"
             >
-              <span>Consulter mes conversations</span>
+              <span>{t('dashboard.openMessages')}</span>
               <ArrowRight size={14} className="text-slate-400 group-hover:text-brand-600 transition-colors" />
             </button>
             <button
               onClick={() => setActiveTab('gallery')}
               className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-brand-50 hover:text-brand-700 text-slate-600 text-xs font-bold transition-all duration-150 group"
             >
-              <span>Explorer la galerie photo</span>
+              <span>{t('dashboard.openGallery')}</span>
               <ArrowRight size={14} className="text-slate-400 group-hover:text-brand-600 transition-colors" />
             </button>
           </div>

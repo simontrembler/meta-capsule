@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useArchive } from '../context/ArchiveContext';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { MediaAttachment, MediaSource } from '../db/models';
 import { getMediaBlobUrl } from '../utils/zipMediaResolver';
@@ -22,12 +23,25 @@ type SourceFilter = 'all' | MediaSource;
 type TypeFilter = 'all' | 'photo' | 'video' | 'audio';
 type PlatformFilter = 'all' | 'facebook' | 'instagram';
 
-const SOURCE_LABELS: Record<MediaSource, string> = {
-  post: 'Publication',
-  story: 'Story',
-  message: 'Message',
-  other: 'Autre'
-};
+function sourceLabelKey(source: MediaSource | undefined): 'post' | 'story' | 'message' | 'other' {
+  return source ?? 'other';
+}
+
+function getSourceLabel(
+  t: (key: 'gallery.sourceLabel.post' | 'gallery.sourceLabel.story' | 'gallery.sourceLabel.message' | 'gallery.sourceLabel.other') => string,
+  source: MediaSource | undefined
+): string {
+  switch (sourceLabelKey(source)) {
+    case 'post':
+      return t('gallery.sourceLabel.post');
+    case 'story':
+      return t('gallery.sourceLabel.story');
+    case 'message':
+      return t('gallery.sourceLabel.message');
+    default:
+      return t('gallery.sourceLabel.other');
+  }
+}
 
 function inferSourceFromPath(relativePath: string): MediaSource {
   const path = relativePath.replace(/\\/g, '/').toLowerCase();
@@ -64,6 +78,7 @@ const GalleryItem: React.FC<{
   zipFile: File | null;
   onClick: () => void;
 }> = ({ item, zipFile, onClick }) => {
+  const { t } = useLanguage();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -123,7 +138,7 @@ const GalleryItem: React.FC<{
       {!zipFile ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
           <AlertCircle size={18} className="text-amber-500 mb-1" />
-          <span className="text-[10px] text-slate-500 font-bold leading-tight">ZIP non chargé</span>
+          <span className="text-[10px] text-slate-500 font-bold leading-tight">{t('gallery.zipMissing')}</span>
         </div>
       ) : isLoading || (!blobUrl && !error && isVisible) ? (
         <div className="w-full h-full flex items-center justify-center">
@@ -132,7 +147,7 @@ const GalleryItem: React.FC<{
       ) : error ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-red-50">
           <AlertCircle size={18} className="text-red-500 mb-1" />
-          <span className="text-[10px] text-red-600 font-bold leading-tight">Erreur</span>
+          <span className="text-[10px] text-red-600 font-bold leading-tight">{t('common.error')}</span>
         </div>
       ) : !blobUrl ? (
         <div className="w-full h-full bg-slate-200/70" />
@@ -152,7 +167,7 @@ const GalleryItem: React.FC<{
           <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center">
             <MessageSquare size={18} />
           </div>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-700">Vocal</span>
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-700">{t('gallery.voice')}</span>
           <audio src={blobUrl} controls preload="none" className="w-full h-8" onClick={(e) => e.stopPropagation()} />
         </div>
       ) : (
@@ -168,7 +183,7 @@ const GalleryItem: React.FC<{
         <span
           className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider text-white shadow-md ${sourceBadgeClass(item.source)}`}
         >
-          {SOURCE_LABELS[item.source || 'other']}
+          {getSourceLabel(t, item.source)}
         </span>
       </div>
     </div>
@@ -177,6 +192,7 @@ const GalleryItem: React.FC<{
 
 export const GalleryModule: React.FC = () => {
   const { zipFile } = useArchive();
+  const { t, dateLocale } = useLanguage();
   const [allMedia, setAllMedia] = useState<MediaAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -223,7 +239,7 @@ export const GalleryModule: React.FC = () => {
       const date = new Date(item.timestamp);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       if (!index.has(key)) {
-        const labelRaw = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        const labelRaw = date.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' });
         const label = labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
         index.set(key, []);
         groups.push({ key, label, items: index.get(key)! });
@@ -232,7 +248,7 @@ export const GalleryModule: React.FC = () => {
     }
 
     return groups;
-  }, [filteredItems]);
+  }, [filteredItems, dateLocale]);
 
   const counts = useMemo(() => {
     const base = { post: 0, story: 0, message: 0, other: 0, photo: 0, video: 0, audio: 0, total: allMedia.length };
@@ -301,32 +317,38 @@ export const GalleryModule: React.FC = () => {
       <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3 shrink-0">
         <div className="flex items-center gap-2 text-slate-700">
           <Filter size={18} className="text-brand-600" />
-          <span className="font-bold text-sm">Filtres</span>
+          <span className="font-bold text-sm">{t('common.filters')}</span>
           <span className="text-xs text-slate-400 font-semibold">
-            {isLoading ? 'Chargement…' : `${filteredItems.length} / ${counts.total} médias · ${mediaGroups.length} mois`}
+            {isLoading
+              ? t('common.loading')
+              : t('gallery.loaded', {
+                  filtered: filteredItems.length,
+                  total: counts.total,
+                  months: mediaGroups.length
+                })}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-slate-400 mr-1">
-            <LayoutGrid size={12} /> Origine
+            <LayoutGrid size={12} /> {t('gallery.origin')}
           </div>
           <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-            {chip(sourceFilter === 'all', () => setSourceFilter('all'), `Tous (${counts.total})`)}
-            {chip(sourceFilter === 'post', () => setSourceFilter('post'), `Publications (${counts.post})`)}
-            {chip(sourceFilter === 'story', () => setSourceFilter('story'), `Stories (${counts.story})`)}
-            {chip(sourceFilter === 'message', () => setSourceFilter('message'), `Messages (${counts.message})`)}
-          </div>
-
-          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-            {chip(typeFilter === 'all', () => setTypeFilter('all'), 'Tous types')}
-            {chip(typeFilter === 'photo', () => setTypeFilter('photo'), `Photos (${counts.photo})`)}
-            {chip(typeFilter === 'video', () => setTypeFilter('video'), `Vidéos (${counts.video})`)}
-            {chip(typeFilter === 'audio', () => setTypeFilter('audio'), `Vocaux (${counts.audio})`)}
+            {chip(sourceFilter === 'all', () => setSourceFilter('all'), t('gallery.source.all', { count: counts.total }))}
+            {chip(sourceFilter === 'post', () => setSourceFilter('post'), t('gallery.source.post', { count: counts.post }))}
+            {chip(sourceFilter === 'story', () => setSourceFilter('story'), t('gallery.source.story', { count: counts.story }))}
+            {chip(sourceFilter === 'message', () => setSourceFilter('message'), t('gallery.source.message', { count: counts.message }))}
           </div>
 
           <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
-            {chip(platformFilter === 'all', () => setPlatformFilter('all'), 'Toutes plateformes')}
+            {chip(typeFilter === 'all', () => setTypeFilter('all'), t('gallery.type.all'))}
+            {chip(typeFilter === 'photo', () => setTypeFilter('photo'), t('gallery.type.photo', { count: counts.photo }))}
+            {chip(typeFilter === 'video', () => setTypeFilter('video'), t('gallery.type.video', { count: counts.video }))}
+            {chip(typeFilter === 'audio', () => setTypeFilter('audio'), t('gallery.type.audio', { count: counts.audio }))}
+          </div>
+
+          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+            {chip(platformFilter === 'all', () => setPlatformFilter('all'), t('gallery.platform.all'))}
             {chip(
               platformFilter === 'facebook',
               () => setPlatformFilter('facebook'),
@@ -350,7 +372,9 @@ export const GalleryModule: React.FC = () => {
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <Calendar size={16} className="text-brand-600" />
                 <h3 className="font-extrabold text-slate-800 text-base">{group.label}</h3>
-                <span className="text-xs text-slate-400 font-bold">({group.items.length} médias)</span>
+                <span className="text-xs text-slate-400 font-bold">
+                  ({t('gallery.mediaCount', { count: group.items.length })})
+                </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -371,11 +395,9 @@ export const GalleryModule: React.FC = () => {
         ) : (
           <div className="text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
             <ImageIcon size={48} className="text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-700 mb-1">Aucun média trouvé</h3>
+            <h3 className="text-lg font-bold text-slate-700 mb-1">{t('gallery.emptyTitle')}</h3>
             <p className="text-slate-400 text-sm max-w-sm mx-auto">
-              {isLoading
-                ? 'Chargement de la galerie…'
-                : "Aucun média pour ces filtres. Réimportez l'archive pour appliquer les nouvelles dates et origines."}
+              {isLoading ? t('gallery.emptyLoading') : t('gallery.emptyHint')}
             </p>
           </div>
         )}
@@ -386,9 +408,9 @@ export const GalleryModule: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                {SOURCE_LABELS[filteredItems[lightboxIndex].source || 'other']} •{' '}
+                {getSourceLabel(t, filteredItems[lightboxIndex].source)} •{' '}
                 {filteredItems[lightboxIndex].platform} •{' '}
-                {new Date(filteredItems[lightboxIndex].timestamp).toLocaleDateString('fr-FR', {
+                {new Date(filteredItems[lightboxIndex].timestamp).toLocaleDateString(dateLocale, {
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric'
@@ -407,7 +429,7 @@ export const GalleryModule: React.FC = () => {
                   className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-2 text-xs font-bold"
                 >
                   <Download size={16} />
-                  <span>Exporter</span>
+                  <span>{t('common.export')}</span>
                 </a>
               )}
               <button
@@ -431,7 +453,7 @@ export const GalleryModule: React.FC = () => {
               {!zipFile ? (
                 <div className="text-center space-y-2">
                   <AlertCircle size={48} className="text-amber-500 mx-auto" />
-                  <p className="font-bold text-lg">ZIP non chargé en mémoire</p>
+                  <p className="font-bold text-lg">{t('gallery.zipMissingMemory')}</p>
                 </div>
               ) : !lightboxBlobUrl ? (
                 <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
