@@ -42,11 +42,12 @@ export const en: Record<TranslationKey, string> = {
   'app.loadZipTitle': 'Select the original ZIP file to load images',
 
   // Import
-  'import.tagline': 'Rediscover your Facebook & Instagram archives safely, 100% offline.',
-  'import.drop': 'Drop your .zip archive here',
-  'import.hintFsa': 'Persistent file access (Chrome/Edge) — no reload needed after refresh',
-  'import.hintBrowse': 'or click to browse your files',
-  'import.choose': 'Choose a file',
+  'import.headline': 'Open your time capsule.',
+  'import.tagline': 'Facebook & Instagram archives, processed here — 100% offline.',
+  'import.drop': 'Drop the .zip into the capsule',
+  'import.hintFsa': 'Persistent file access (Chrome/Edge) — survives refresh',
+  'import.hintBrowse': 'or choose a file from your device',
+  'import.choose': 'Open capsule',
   'import.error': 'Import error:',
   'import.localTitle': '100% Local',
   'import.localDesc': 'No server. Your data stays in your browser.',
@@ -54,8 +55,9 @@ export const en: Record<TranslationKey, string> = {
   'import.airplaneDesc': 'Works perfectly without an Internet connection.',
   'import.telemetryTitle': 'Zero Telemetry',
   'import.telemetryDesc': 'No trackers, no ad cookies, no analytics.',
-  'import.inProgress': 'Import in progress...',
+  'import.inProgress': 'Opening capsule…',
   'import.dontClose': 'Please keep this tab open during processing. Large archives may take a few minutes.',
+  'import.privacyBadge': '100% local · no upload',
 
   // Settings
   'settings.privacyTitle': 'Security & Privacy',

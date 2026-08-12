@@ -52,30 +52,30 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="h-20 bg-white border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-10 shrink-0">
+    <header className="h-16 bg-[#FFFEFB] border-b border-ink-200 px-6 flex items-center justify-between sticky top-0 z-10 shrink-0">
       <div>
-        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+        <h2 className="font-display text-xl font-semibold text-ink-950 tracking-[-0.02em]">
           {t(titleKeys[activeTab] || 'nav.dashboard')}
         </h2>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <LanguageToggle compact />
 
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold shadow-sm">
-          <ShieldCheck size={14} className="shrink-0" />
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 border border-ink-200 text-ink-600 text-xs font-semibold">
+          <ShieldCheck size={13} className="shrink-0 text-brand-600" />
           <span>{t('app.localSecure')}</span>
         </div>
 
         {zipAccessState === 'ready' && zipFile ? (
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold shadow-sm">
-            <FileCheck size={14} className="shrink-0" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 border border-ink-200 text-ink-700 text-xs font-semibold">
+            <FileCheck size={13} className="shrink-0 text-brand-600" />
             <span className="max-w-[150px] truncate">{zipFile.name}</span>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-100 text-amber-700 text-xs font-bold shadow-sm">
-              <AlertTriangle size={14} className="shrink-0" />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border border-ink-300 text-ink-700 text-xs font-semibold">
+              <AlertTriangle size={13} className="shrink-0 text-brand-600" />
               <span>
                 {zipAccessState === 'needs-permission' ? t('app.zipPending') : t('app.textOnly')}
               </span>
@@ -89,7 +89,7 @@ export const Header: React.FC = () => {
             />
             <button
               onClick={handleRestoreClick}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md shadow-brand-600/10 transition-all duration-150"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#1C1B1A] hover:bg-[#2F2C29] text-[#F7F1EA] text-xs font-semibold transition-colors"
               title={
                 zipAccessState === 'needs-permission'
                   ? t('app.reactivateTitle')

@@ -59,14 +59,14 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
       <img
         src={blobUrl}
         alt={name}
-        className={`${sizeClasses[size]} rounded-full object-cover shrink-0 border border-brand-100 shadow-sm ${className}`}
+        className={`${sizeClasses[size]} rounded-full object-cover shrink-0 border border-ink-200 ${className}`}
       />
     );
   }
 
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold shrink-0 ${className}`}
+      className={`${sizeClasses[size]} rounded-full bg-ink-100 text-ink-700 flex items-center justify-center font-semibold shrink-0 ${className}`}
     >
       {initial}
     </div>

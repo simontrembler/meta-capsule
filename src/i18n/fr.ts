@@ -42,11 +42,12 @@ export const fr = {
   'app.loadZipTitle': "Sélectionner le fichier ZIP d'origine pour charger les images",
 
   // Import
-  'import.tagline': 'Redécouvrez vos archives Facebook & Instagram en toute sécurité, 100% hors-ligne.',
-  'import.drop': 'Glissez votre archive .zip ici',
-  'import.hintFsa': 'Accès fichier persisté (Chrome/Edge) — pas de rechargement après F5',
-  'import.hintBrowse': 'ou cliquez pour parcourir vos fichiers',
-  'import.choose': 'Choisir un fichier',
+  'import.headline': 'Ouvrez votre capsule temporelle.',
+  'import.tagline': 'Archives Facebook & Instagram, traitées ici — 100 % hors-ligne.',
+  'import.drop': 'Déposez le .zip dans la capsule',
+  'import.hintFsa': 'Accès fichier persisté (Chrome/Edge) — intact après F5',
+  'import.hintBrowse': 'ou choisissez un fichier sur votre appareil',
+  'import.choose': 'Ouvrir la capsule',
   'import.error': "Erreur d'importation :",
   'import.localTitle': '100% Local',
   'import.localDesc': 'Aucun serveur. Vos données restent dans votre navigateur.',
@@ -54,8 +55,9 @@ export const fr = {
   'import.airplaneDesc': 'Fonctionne parfaitement sans connexion Internet.',
   'import.telemetryTitle': 'Zéro Télémétrie',
   'import.telemetryDesc': "Pas de trackers, pas de cookies publicitaires, pas d'analytics.",
-  'import.inProgress': 'Importation en cours...',
-  'import.dontClose': "Veuillez ne pas fermer cet onglet pendant le traitement. Cela peut prendre quelques minutes pour les archives volumineuses.",
+  'import.inProgress': 'Ouverture de la capsule…',
+  'import.dontClose': "Ne fermez pas cet onglet pendant le traitement. Les grosses archives peuvent prendre quelques minutes.",
+  'import.privacyBadge': '100 % local · aucun upload',
 
   // Settings
   'settings.privacyTitle': 'Sécurité et Confidentialité',

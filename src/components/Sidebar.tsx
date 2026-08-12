@@ -7,6 +7,14 @@ import { ProfileAvatar } from './ProfileAvatar';
 import { LayoutDashboard, MessageSquare, Image, Award, Settings, LogOut, Package } from 'lucide-react';
 import type { TranslationKey } from '../i18n';
 
+function platformBadgeClass(platform: string): string {
+  if (platform === 'facebook') return 'bg-blue-600 text-white border-transparent';
+  if (platform === 'instagram') {
+    return 'bg-gradient-to-tr from-amber-500 via-red-500 to-purple-600 text-white border-transparent';
+  }
+  return 'border-ink-600 text-ink-300';
+}
+
 export const Sidebar: React.FC = () => {
   const { activeTab, setActiveTab, resetArchive, stats, zipFile } = useArchive();
   const { t } = useLanguage();
@@ -37,18 +45,20 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 shrink-0">
-      <div className="p-6 border-b border-slate-50 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center">
-          <Package size={22} />
+    <aside className="mc-surface-ink w-60 border-r border-ink-800 flex flex-col h-screen sticky top-0 shrink-0">
+      <div className="px-5 py-5 border-b border-ink-800 flex items-center gap-3">
+        <div className="w-9 h-9 border border-ink-700 text-brand-400 flex items-center justify-center">
+          <Package size={18} />
         </div>
         <div>
-          <h1 className="font-extrabold text-brand-950 text-lg leading-none">Meta-Capsule</h1>
-          <span className="text-xs text-slate-400 font-medium">v1.0.0 (MVP)</span>
+          <h1 className="font-display font-semibold mc-text-on-ink text-lg leading-none tracking-[-0.02em]">
+            Meta-Capsule
+          </h1>
+          <span className="text-[11px] text-ink-400 font-medium">v1.0.0</span>
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-3 space-y-0.5">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -56,22 +66,22 @@ export const Sidebar: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-brand-50 text-brand-700 shadow-sm shadow-brand-100/50'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                  ? 'bg-brand-600 text-white'
+                  : 'text-ink-300 hover:bg-ink-900 hover:text-white'
               }`}
             >
-              <Icon size={18} className={isActive ? 'text-brand-600' : 'text-slate-400'} />
+              <Icon size={17} className={isActive ? 'text-white' : 'text-ink-400'} />
               {t(item.labelKey)}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-50 space-y-4">
+      <div className="p-3 border-t border-ink-800 space-y-3">
         {stats && (
-          <div className="px-4 py-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center gap-3">
+          <div className="mc-surface-ink-muted px-3 py-3 border border-ink-700 flex items-center gap-3 rounded-md">
             <ProfileAvatar
               name={stats.ownerName || t('common.user')}
               relativePath={profile?.profilePicture}
@@ -79,9 +89,13 @@ export const Sidebar: React.FC = () => {
               size="sm"
             />
             <div className="min-w-0">
-              <p className="text-xs text-slate-400 font-medium leading-none mb-1">{t('app.archiveOf')}</p>
-              <p className="font-bold text-slate-800 text-sm truncate">{stats.ownerName || t('common.user')}</p>
-              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-md bg-brand-100 text-brand-700 text-[10px] font-bold uppercase tracking-wider">
+              <p className="text-[11px] text-ink-400 font-medium leading-none mb-1">{t('app.archiveOf')}</p>
+              <p className="font-semibold mc-text-on-ink text-sm truncate">
+                {stats.ownerName || t('common.user')}
+              </p>
+              <span
+                className={`inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 border text-[10px] font-semibold uppercase tracking-wider ${platformBadgeClass(stats.platform)}`}
+              >
                 {stats.platform}
               </span>
             </div>
@@ -90,9 +104,9 @@ export const Sidebar: React.FC = () => {
 
         <button
           onClick={resetArchive}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md font-medium text-sm text-red-400 hover:bg-ink-900 hover:text-red-300 transition-colors"
         >
-          <LogOut size={18} />
+          <LogOut size={17} />
           {t('app.closeArchive')}
         </button>
       </div>

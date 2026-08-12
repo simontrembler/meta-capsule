@@ -61,16 +61,22 @@ function withSource(item: MediaAttachment): MediaAttachment {
 }
 
 function sourceBadgeClass(source: MediaSource | undefined): string {
+  // Option 1 — Graphite + cuivre (opaque fills)
   switch (source) {
     case 'post':
-      return 'bg-brand-600';
+      return 'bg-[#1C1B1A] text-[#F7F1EA]';
     case 'story':
-      return 'bg-violet-600';
+      return 'bg-[#433F3B] text-[#F7F1EA]';
     case 'message':
-      return 'bg-sky-600';
+      return 'bg-[#9A6B3F] text-white';
     default:
-      return 'bg-slate-600';
+      return 'bg-[#6F6A63] text-white';
   }
+}
+
+function platformChipActiveClass(platform: 'facebook' | 'instagram'): string {
+  if (platform === 'facebook') return 'bg-blue-600 text-white';
+  return 'bg-gradient-to-tr from-amber-500 via-red-500 to-purple-600 text-white';
 }
 
 const GalleryItem: React.FC<{
@@ -133,16 +139,16 @@ const GalleryItem: React.FC<{
     <div
       ref={rootRef}
       onClick={onClick}
-      className="aspect-square rounded-xl overflow-hidden border border-slate-200/60 bg-slate-100 group cursor-pointer relative shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-150"
+      className="aspect-square rounded-md overflow-hidden border border-ink-200 bg-ink-100 group cursor-pointer relative transition-opacity hover:opacity-90"
     >
       {!zipFile ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
-          <AlertCircle size={18} className="text-amber-500 mb-1" />
-          <span className="text-[10px] text-slate-500 font-bold leading-tight">{t('gallery.zipMissing')}</span>
+          <AlertCircle size={18} className="text-brand-600 mb-1" />
+          <span className="text-[10px] text-ink-500 font-semibold leading-tight">{t('gallery.zipMissing')}</span>
         </div>
       ) : isLoading || (!blobUrl && !error && isVisible) ? (
         <div className="w-full h-full flex items-center justify-center">
-          <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-600 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-ink-300 border-t-brand-600 rounded-full animate-spin" />
         </div>
       ) : error ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-red-50">
@@ -150,38 +156,38 @@ const GalleryItem: React.FC<{
           <span className="text-[10px] text-red-600 font-bold leading-tight">{t('common.error')}</span>
         </div>
       ) : !blobUrl ? (
-        <div className="w-full h-full bg-slate-200/70" />
+        <div className="w-full h-full bg-ink-200" />
       ) : item.type === 'photo' ? (
         <img src={blobUrl} alt="Gallery" className="w-full h-full object-cover group-hover:opacity-90 transition-opacity" />
       ) : item.type === 'video' ? (
-        <div className="w-full h-full relative bg-slate-900">
+        <div className="w-full h-full relative bg-ink-950">
           <video src={blobUrl} className="w-full h-full object-cover" muted playsInline />
           <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-            <div className="w-10 h-10 rounded-full bg-white/90 text-brand-600 flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-full bg-white/90 text-ink-800 flex items-center justify-center">
               <Film size={18} />
             </div>
           </div>
         </div>
       ) : item.type === 'audio' ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-sky-50 p-3 text-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-ink-100 p-3 text-center gap-2">
+          <div className="w-10 h-10 rounded-full bg-ink-200 text-ink-700 flex items-center justify-center">
             <MessageSquare size={18} />
           </div>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-700">{t('gallery.voice')}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-700">{t('gallery.voice')}</span>
           <audio src={blobUrl} controls preload="none" className="w-full h-8" onClick={(e) => e.stopPropagation()} />
         </div>
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 p-4 text-center">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-ink-50 p-4 text-center">
           <FileText size={32} className="text-brand-600 mb-2" />
-          <span className="text-xs font-bold text-slate-700 truncate w-full">
+          <span className="text-xs font-bold text-ink-800 truncate w-full">
             {item.relativePath.split('/').pop()}
           </span>
         </div>
       )}
 
-      <div className="absolute top-2 left-2">
+      <div className="absolute top-2 left-2 z-10">
         <span
-          className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider text-white shadow-md ${sourceBadgeClass(item.source)}`}
+          className={`inline-block px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider shadow-none ${sourceBadgeClass(item.source)}`}
         >
           {getSourceLabel(t, item.source)}
         </span>
@@ -299,13 +305,15 @@ export const GalleryModule: React.FC = () => {
     active: boolean,
     onClick: () => void,
     label: string,
-    activeClass = 'bg-white text-brand-700 shadow-sm'
+    activeClass = 'bg-[#1C1B1A] text-[#F7F1EA]'
   ) => (
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-        active ? activeClass : 'text-slate-500 hover:text-slate-800'
+      className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+        active
+          ? activeClass
+          : 'text-ink-700 hover:text-ink-950 hover:bg-ink-100'
       }`}
     >
       {label}
@@ -313,12 +321,12 @@ export const GalleryModule: React.FC = () => {
   );
 
   return (
-    <div className="p-8 space-y-6 max-w-6xl mx-auto h-[calc(100vh-5rem)] flex flex-col overflow-hidden">
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3 shrink-0">
-        <div className="flex items-center gap-2 text-slate-700">
+    <div className="p-8 space-y-4 max-w-6xl mx-auto h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      <div className="bg-white p-4 border border-ink-200 rounded-md space-y-3 shrink-0">
+        <div className="flex items-center gap-2 text-ink-800">
           <Filter size={18} className="text-brand-600" />
-          <span className="font-bold text-sm">{t('common.filters')}</span>
-          <span className="text-xs text-slate-400 font-semibold">
+          <span className="font-semibold text-sm">{t('common.filters')}</span>
+          <span className="text-xs text-ink-400 font-medium">
             {isLoading
               ? t('common.loading')
               : t('gallery.loaded', {
@@ -330,36 +338,36 @@ export const GalleryModule: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold text-slate-400 mr-1">
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400 mr-1">
             <LayoutGrid size={12} /> {t('gallery.origin')}
           </div>
-          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+          <div className="flex border border-ink-200 p-0.5">
             {chip(sourceFilter === 'all', () => setSourceFilter('all'), t('gallery.source.all', { count: counts.total }))}
             {chip(sourceFilter === 'post', () => setSourceFilter('post'), t('gallery.source.post', { count: counts.post }))}
             {chip(sourceFilter === 'story', () => setSourceFilter('story'), t('gallery.source.story', { count: counts.story }))}
             {chip(sourceFilter === 'message', () => setSourceFilter('message'), t('gallery.source.message', { count: counts.message }))}
           </div>
 
-          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+          <div className="flex border border-ink-200 p-0.5">
             {chip(typeFilter === 'all', () => setTypeFilter('all'), t('gallery.type.all'))}
             {chip(typeFilter === 'photo', () => setTypeFilter('photo'), t('gallery.type.photo', { count: counts.photo }))}
             {chip(typeFilter === 'video', () => setTypeFilter('video'), t('gallery.type.video', { count: counts.video }))}
             {chip(typeFilter === 'audio', () => setTypeFilter('audio'), t('gallery.type.audio', { count: counts.audio }))}
           </div>
 
-          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+          <div className="flex border border-ink-200 p-0.5">
             {chip(platformFilter === 'all', () => setPlatformFilter('all'), t('gallery.platform.all'))}
             {chip(
               platformFilter === 'facebook',
               () => setPlatformFilter('facebook'),
               'Facebook',
-              'bg-blue-600 text-white shadow-sm'
+              platformChipActiveClass('facebook')
             )}
             {chip(
               platformFilter === 'instagram',
               () => setPlatformFilter('instagram'),
               'Instagram',
-              'bg-gradient-to-tr from-amber-500 via-red-500 to-purple-600 text-white shadow-sm'
+              platformChipActiveClass('instagram')
             )}
           </div>
         </div>
@@ -369,10 +377,10 @@ export const GalleryModule: React.FC = () => {
         {filteredItems.length > 0 ? (
           mediaGroups.map((group) => (
             <div key={group.key} className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2 pb-2 border-b border-ink-200">
                 <Calendar size={16} className="text-brand-600" />
-                <h3 className="font-extrabold text-slate-800 text-base">{group.label}</h3>
-                <span className="text-xs text-slate-400 font-bold">
+                <h3 className="font-display font-semibold text-ink-950 text-base">{group.label}</h3>
+                <span className="text-xs text-ink-400 font-semibold">
                   ({t('gallery.mediaCount', { count: group.items.length })})
                 </span>
               </div>
@@ -393,10 +401,10 @@ export const GalleryModule: React.FC = () => {
             </div>
           ))
         ) : (
-          <div className="text-center py-20 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <ImageIcon size={48} className="text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-700 mb-1">{t('gallery.emptyTitle')}</h3>
-            <p className="text-slate-400 text-sm max-w-sm mx-auto">
+          <div className="text-center py-20 bg-white rounded-md border border-ink-200">
+            <ImageIcon size={48} className="text-ink-300 mx-auto mb-3" />
+            <h3 className="font-display text-lg font-semibold text-ink-800 mb-1">{t('gallery.emptyTitle')}</h3>
+            <p className="text-ink-400 text-sm max-w-sm mx-auto">
               {isLoading ? t('gallery.emptyLoading') : t('gallery.emptyHint')}
             </p>
           </div>
@@ -407,7 +415,7 @@ export const GalleryModule: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex flex-col justify-between p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
-              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+              <span className="text-xs text-ink-400 font-bold uppercase tracking-wider">
                 {getSourceLabel(t, filteredItems[lightboxIndex].source)} •{' '}
                 {filteredItems[lightboxIndex].platform} •{' '}
                 {new Date(filteredItems[lightboxIndex].timestamp).toLocaleDateString(dateLocale, {
@@ -416,7 +424,7 @@ export const GalleryModule: React.FC = () => {
                   year: 'numeric'
                 })}
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold truncate max-w-md">
+              <span className="text-[10px] text-ink-500 font-semibold truncate max-w-md">
                 {filteredItems[lightboxIndex].relativePath}
               </span>
             </div>
@@ -426,7 +434,7 @@ export const GalleryModule: React.FC = () => {
                 <a
                   href={lightboxBlobUrl}
                   download={filteredItems[lightboxIndex].relativePath.split('/').pop()}
-                  className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-2 text-xs font-bold"
+                  className="p-2.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-2 text-xs font-bold"
                 >
                   <Download size={16} />
                   <span>{t('common.export')}</span>
@@ -434,7 +442,7 @@ export const GalleryModule: React.FC = () => {
               )}
               <button
                 onClick={closeLightbox}
-                className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
               >
                 <X size={20} />
               </button>
@@ -452,7 +460,7 @@ export const GalleryModule: React.FC = () => {
             <div className="flex-1 max-h-[70vh] flex items-center justify-center">
               {!zipFile ? (
                 <div className="text-center space-y-2">
-                  <AlertCircle size={48} className="text-amber-500 mx-auto" />
+                  <AlertCircle size={48} className="text-brand-400 mx-auto" />
                   <p className="font-bold text-lg">{t('gallery.zipMissingMemory')}</p>
                 </div>
               ) : !lightboxBlobUrl ? (
@@ -461,14 +469,14 @@ export const GalleryModule: React.FC = () => {
                 <img
                   src={lightboxBlobUrl}
                   alt="Lightbox"
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                  className="max-w-full max-h-[70vh] object-contain"
                 />
               ) : filteredItems[lightboxIndex].type === 'video' ? (
                 <video
                   src={lightboxBlobUrl}
                   controls
                   autoPlay
-                  className="max-w-full max-h-[70vh] rounded-lg shadow-2xl"
+                  className="max-w-full max-h-[70vh]"
                 />
               ) : (
                 <div className="text-center space-y-4">
@@ -488,7 +496,7 @@ export const GalleryModule: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-center text-xs text-slate-500 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+          <div className="text-center text-xs text-ink-500 font-bold uppercase tracking-wider flex items-center justify-center gap-2">
             {filteredItems[lightboxIndex].source === 'message' && <MessageSquare size={12} />}
             {lightboxIndex + 1} / {filteredItems.length}
           </div>

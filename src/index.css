@@ -2,7 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --mc-ink-950: #1c1b1a;
+  --mc-ink-900: #242220;
+  --mc-ink-800: #2f2c29;
+  --mc-ink-700: #433f3b;
+  --mc-ink-500: #6f6a63;
+  --mc-ink-300: #b5afa4;
+  --mc-ink-200: #d4cfc6;
+  --mc-ink-50: #f3f1ec;
+  --mc-paper: #fffefb;
+  --mc-brand-50: #f7f1ea;
+  --mc-brand-300: #c59a70;
+  --mc-brand-500: #9a6b3f;
+  --mc-brand-600: #825835;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Guaranteed contrast surfaces (avoid light text on missing dark bg) */
+.mc-surface-ink {
+  background-color: var(--mc-ink-950);
+  color: var(--mc-brand-50);
+}
+
+.mc-surface-ink-muted {
+  background-color: var(--mc-ink-900);
+  color: var(--mc-brand-50);
+}
+
+.mc-text-on-ink {
+  color: var(--mc-brand-50);
+}
+
+.mc-text-on-ink-muted {
+  color: var(--mc-ink-300);
+}
+
+.mc-text-on-ink-accent {
+  color: var(--mc-brand-300);
+}
+
+.landing-grid {
+  background-color: var(--mc-ink-50);
+  background-image:
+    linear-gradient(to right, rgba(28, 27, 26, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 27, 26, 0.055) 1px, transparent 1px),
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgba(154, 107, 63, 0.11), transparent 60%);
+  background-size: 48px 48px, 48px 48px, 100% 100%;
+}
+
+.capsule-shell {
+  border-radius: 999px;
 }

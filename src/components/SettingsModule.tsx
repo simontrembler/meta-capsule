@@ -9,38 +9,38 @@ export const SettingsModule: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="p-8 max-w-4xl space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h3 className="text-lg font-bold text-slate-800">{t('settings.languageTitle')}</h3>
-        <p className="text-slate-600 text-sm">{t('settings.languageBody')}</p>
+    <div className="p-8 max-w-4xl space-y-4">
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
+        <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.languageTitle')}</h3>
+        <p className="text-ink-600 text-sm">{t('settings.languageBody')}</p>
         <LanguageToggle />
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
         <div className="flex items-center gap-3 text-brand-700">
-          <ShieldAlert size={22} />
-          <h3 className="text-lg font-bold text-slate-800">{t('settings.privacyTitle')}</h3>
+          <ShieldAlert size={20} />
+          <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.privacyTitle')}</h3>
         </div>
-        <p className="text-slate-600 text-sm leading-relaxed">{t('settings.privacyBody')}</p>
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 space-y-1">
-          <p>• <strong>{t('settings.storage')}</strong> {t('settings.storageValue')}</p>
-          <p>• <strong>{t('settings.zipAccess')}</strong> {t('settings.zipAccessValue')}</p>
-          <p>• <strong>{t('settings.telemetry')}</strong> {t('settings.telemetryValue')}</p>
-          <p>• <strong>{t('settings.internet')}</strong> {t('settings.internetValue')}</p>
+        <p className="text-ink-600 text-sm leading-relaxed">{t('settings.privacyBody')}</p>
+        <div className="p-4 border border-ink-200 text-xs text-ink-500 space-y-1">
+          <p>• <strong className="text-ink-700">{t('settings.storage')}</strong> {t('settings.storageValue')}</p>
+          <p>• <strong className="text-ink-700">{t('settings.zipAccess')}</strong> {t('settings.zipAccessValue')}</p>
+          <p>• <strong className="text-ink-700">{t('settings.telemetry')}</strong> {t('settings.telemetryValue')}</p>
+          <p>• <strong className="text-ink-700">{t('settings.internet')}</strong> {t('settings.internetValue')}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <div className="flex items-center gap-3 text-slate-700">
-          <Database size={22} />
-          <h3 className="text-lg font-bold text-slate-800">{t('settings.dataTitle')}</h3>
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
+        <div className="flex items-center gap-3 text-ink-700">
+          <Database size={20} />
+          <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.dataTitle')}</h3>
         </div>
-        <p className="text-slate-600 text-sm">{t('settings.dataBody')}</p>
+        <p className="text-ink-600 text-sm">{t('settings.dataBody')}</p>
 
         <div className="pt-2">
           <button
             onClick={resetArchive}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 font-semibold text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold text-sm transition-colors"
           >
             <Trash2 size={16} />
             {t('settings.deleteData')}

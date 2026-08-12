@@ -11,12 +11,12 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
 
   if (compact) {
     return (
-      <div className="inline-flex items-center rounded-xl bg-slate-50 border border-slate-100 p-0.5">
+      <div className="inline-flex items-center border border-ink-200 p-0.5">
         <button
           type="button"
           onClick={() => setLocale('fr')}
-          className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
-            locale === 'fr' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-400 hover:text-slate-700'
+          className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            locale === 'fr' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950 hover:bg-ink-100'
           }`}
         >
           FR
@@ -24,8 +24,8 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
         <button
           type="button"
           onClick={() => setLocale('en')}
-          className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all ${
-            locale === 'en' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-400 hover:text-slate-700'
+          className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+            locale === 'en' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950 hover:bg-ink-100'
           }`}
         >
           EN
@@ -36,16 +36,16 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-slate-700">
+      <div className="flex items-center gap-2 text-ink-800">
         <Languages size={18} className="text-brand-600" />
-        <span className="font-bold text-sm">{t('lang.label')}</span>
+        <span className="font-semibold text-sm">{t('lang.label')}</span>
       </div>
-      <div className="inline-flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+      <div className="inline-flex border border-ink-200 p-0.5">
         <button
           type="button"
           onClick={() => setLocale('fr')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-            locale === 'fr' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+          className={`px-4 py-2 text-xs font-semibold transition-colors ${
+            locale === 'fr' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950'
           }`}
         >
           {t('lang.fr')}
@@ -53,8 +53,8 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
         <button
           type="button"
           onClick={() => setLocale('en')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
-            locale === 'en' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+          className={`px-4 py-2 text-xs font-semibold transition-colors ${
+            locale === 'en' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950'
           }`}
         >
           {t('lang.en')}
