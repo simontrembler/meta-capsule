@@ -56,30 +56,34 @@ Vous pouvez ouvrir Accounts Center depuis Réglages → Compte Meta, mais les op
 2. Ajoutez la seconde plateforme depuis la barre latérale ou les paramètres.
 3. Laissez l’onglet ouvert pendant l’import : un gros ZIP peut prendre quelques minutes.
 
+**Facebook en plusieurs ZIP** : Meta découpe souvent un gros export en plusieurs parties. Une seule partie « médias » n’a souvent **aucun JSON** (et Meta Capsule refuse alors d’écraser une archive déjà bonne). Extrayez **toutes** les parties du même batch dans **un seul dossier** (les arbres se superposent), puis utilisez « Ouvrir un dossier ». Outils open source locaux : [PeaZip](https://peazip.github.io/) ou 7-Zip — **ne téléversez pas** vos ZIP Meta sur un site de fusion en ligne.
+
 **Chrome** ou **Edge** : l’accès au fichier ou au dossier est mémorisé après un F5 (File System Access API).
 
 **Firefox** / **Safari** : l’index (messages, légendes) reste local ; pour revoir les images, resélectionnez le ZIP ou le dossier.
 
 ## ✨ Fonctionnalités
 
-- **Synthèse** — volume, timeline, profil, « ce jour-là », conversations les plus denses
-- **Messagerie** — Messenger / Instagram Direct, recherche dans le fil, saut année/mois, pièces jointes à la demande
-- **Galerie** — grille chronologique, filtres origine / type / plateforme / mois
-- **Publicité** — centres d’intérêt et annonceurs présents dans l’export
-- **Recherche globale** — messages et légendes (`Ctrl+K`)
+- **Synthèse** — volume, timeline, profil, « ce jour-là », conversations les plus denses, widget **« J’y étais »** (aperçu carte)
+- **Messagerie** — Messenger / Instagram Direct (inbox, demandes, et pour Facebook : archives, filtrés, cutover E2EE), recherche dans le fil, saut année/mois, pièces jointes à la demande
+- **Galerie** — grille chronologique **ou carte** (GPS EXIF de l’export), filtres origine / type / plateforme / mois ; albums et photos Facebook non classées quand présents
+- **Publicité** — centres d’intérêt et annonceurs de l’export (y compris `advertisers_using_your_activity_or_information`)
+- **Recherche globale** — messages et légendes (`Ctrl+K`), dont posts Instagram sauvegardés
 - **Export local** — une photo, ou un fil en HTML (téléchargement navigateur, pas d’upload)
 - **Multi-archives** — Facebook et Instagram séparément ; remplacer l’une n’efface pas l’autre
 - **Confort** — PWA (interface seulement), thème clair / sombre / système, FR / EN
 - **Souveraineté** — tout effacer depuis les paramètres
 
-Les médias ne sont pas copiés en base : métadonnées en IndexedDB, blobs extraits du ZIP ou du dossier à l’affichage.
+Les médias ne sont pas copiés en base : métadonnées en IndexedDB, blobs extraits du ZIP ou du dossier à l’affichage. La carte utilise des tuiles OpenStreetMap (réseau) ; les points GPS restent locaux.
+
+Cartographies des exports (couverture ingest) : [docs/instagram-export-map.md](./docs/instagram-export-map.md), [docs/facebook-export-map.md](./docs/facebook-export-map.md).
 
 ## 🔒 Confidentialité
 
 - Les archives ne quittent pas votre navigateur. Pas de télémétrie, pas de trackers publicitaires.
 - Stockage local uniquement (IndexedDB + handles de fichiers quand le navigateur le permet).
 - Vous pouvez tout supprimer à tout moment.
-- **Premier chargement** : l’app et les polices passent par le réseau. Ensuite, consultation possible hors ligne.
+- **Premier chargement** : l’app et les polices passent par le réseau. Ensuite, consultation possible hors ligne (sauf fond de carte OSM, qui charge des tuiles).
 - **PWA** : le navigateur met en cache l’interface, jamais vos ZIP ni IndexedDB.
 
 ## 🛠 Développer
@@ -94,6 +98,7 @@ Autres scripts : `npm run build`, `npm run preview`, `npm run release -- patch|m
 Historique des versions : [CHANGELOG.md](./CHANGELOG.md).
 
 - **UI** — React 18, TypeScript, Vite, Tailwind CSS, lucide-react
+- **Carte** — Leaflet / react-leaflet + tuiles OpenStreetMap
 - **Base locale** — Dexie.js (IndexedDB)
 - **Archives** — `@zip.js/zip.js` dans un Web Worker
 
