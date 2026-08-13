@@ -6,6 +6,8 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-13
+
 ### Ajouté
 - Navigation mobile en barre du bas (Synthèse, Messagerie, Galerie, Archives, Paramètres)
 - Onglet Archives dédié (ajouter / remplacer / fermer)
