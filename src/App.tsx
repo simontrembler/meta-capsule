@@ -1,5 +1,6 @@
 import React from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ArchiveProvider, useArchive } from './context/ArchiveContext';
 import { ShellProvider } from './context/ShellContext';
 import { ImportScreen } from './components/ImportScreen';
@@ -78,11 +79,13 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <LanguageProvider>
-      <ArchiveProvider>
-        <AppContent />
-      </ArchiveProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <ArchiveProvider>
+          <AppContent />
+        </ArchiveProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

@@ -70,7 +70,7 @@ export const AdTransparencyModule: React.FC = () => {
     if (variant === 'instagram') {
       return 'px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors bg-gradient-to-tr from-amber-500 via-red-500 to-purple-600 text-white';
     }
-    return 'px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors bg-[#1C1B1A] text-[#F7F1EA]';
+    return 'px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors bg-ink-950 text-brand-50';
   };
 
   return (

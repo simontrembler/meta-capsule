@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { MediaAttachment, MediaSource } from '../db/models';
 import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
+import { filenameFromPath, triggerDownloadFromUrl } from '../utils/download';
 import {
   Image as ImageIcon,
   Film,
@@ -77,9 +78,9 @@ function sourceBadgeClass(source: MediaSource | undefined): string {
   // Option 1 — Graphite + cuivre (opaque fills)
   switch (source) {
     case 'post':
-      return 'bg-[#1C1B1A] text-[#F7F1EA]';
+      return 'bg-ink-950 text-brand-50';
     case 'story':
-      return 'bg-[#433F3B] text-[#F7F1EA]';
+      return 'bg-ink-700 text-brand-50';
     case 'message':
       return 'bg-[#9A6B3F] text-white';
     default:
@@ -210,7 +211,7 @@ const GalleryItem: React.FC<{
 };
 
 export const GalleryModule: React.FC = () => {
-  const { getArchiveSource } = useArchive();
+  const { getArchiveSource, requestedMediaId, clearRequestedMedia } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [allMedia, setAllMedia] = useState<MediaAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -220,6 +221,7 @@ export const GalleryModule: React.FC = () => {
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
+  const pendingMediaId = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -296,6 +298,17 @@ export const GalleryModule: React.FC = () => {
     return groups;
   }, [filteredItems, dateLocale]);
 
+  useEffect(() => {
+    if (requestedMediaId) {
+      pendingMediaId.current = requestedMediaId;
+      setSourceFilter('all');
+      setTypeFilter('all');
+      setPlatformFilter('all');
+      setMonthFilter('all');
+      clearRequestedMedia();
+    }
+  }, [requestedMediaId, clearRequestedMedia]);
+
   const counts = useMemo(() => {
     const base = { post: 0, story: 0, message: 0, other: 0, photo: 0, video: 0, audio: 0, total: allMedia.length };
     for (const item of allMedia) {
@@ -319,6 +332,16 @@ export const GalleryModule: React.FC = () => {
       }
     }
   };
+
+  useEffect(() => {
+    const id = pendingMediaId.current;
+    if (!id || isLoading) return;
+    const index = filteredItems.findIndex((item) => item.id === id);
+    if (index >= 0) {
+      pendingMediaId.current = null;
+      void openLightbox(index);
+    }
+  }, [filteredItems, isLoading]);
 
   const closeLightbox = () => {
     setLightboxIndex(null);
@@ -347,7 +370,7 @@ export const GalleryModule: React.FC = () => {
     active: boolean,
     onClick: () => void,
     label: string,
-    activeClass = 'bg-[#1C1B1A] text-[#F7F1EA]'
+    activeClass = 'bg-ink-950 text-brand-50'
   ) => (
     <button
       type="button"
@@ -497,14 +520,19 @@ export const GalleryModule: React.FC = () => {
 
             <div className="flex items-center gap-3">
               {lightboxBlobUrl && (
-                <a
-                  href={lightboxBlobUrl}
-                  download={filteredItems[lightboxIndex].relativePath.split('/').pop()}
+                <button
+                  type="button"
+                  onClick={() =>
+                    triggerDownloadFromUrl(
+                      lightboxBlobUrl,
+                      filenameFromPath(filteredItems[lightboxIndex].relativePath)
+                    )
+                  }
                   className="p-2.5 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center gap-2 text-xs font-bold"
                 >
                   <Download size={16} />
-                  <span>{t('common.export')}</span>
-                </a>
+                  <span>{t('gallery.downloadPhoto')}</span>
+                </button>
               )}
               <button
                 onClick={closeLightbox}

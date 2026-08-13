@@ -180,7 +180,7 @@ export const ArchivesSlots: React.FC<{ variant?: Variant }> = ({ variant = 'sett
                   className={`inline-flex items-center gap-1.5 rounded-md font-semibold transition-colors disabled:opacity-50 ${
                     compact
                       ? 'px-2 py-1 text-[10px] bg-brand-600 text-white hover:bg-brand-500'
-                      : 'px-3 py-1.5 text-xs bg-[#1C1B1A] text-[#F7F1EA] hover:bg-[#2F2C29]'
+                      : 'px-3 py-1.5 text-xs bg-ink-950 text-brand-50 hover:bg-ink-800'
                   }`}
                 >
                   <Plus size={compact ? 11 : 14} />

@@ -140,6 +140,18 @@ export async function getMediaBlobUrl(
   return blobUrl;
 }
 
+export async function getMediaBlob(
+  source: MediaArchiveSource | File | null | undefined,
+  relativePath: string
+): Promise<Blob> {
+  const url = await getMediaBlobUrl(source, relativePath);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Impossible de lire le média');
+  }
+  return response.blob();
+}
+
 export function revokeAllMediaUrls() {
   for (const url of blobUrlCache.values()) {
     URL.revokeObjectURL(url);

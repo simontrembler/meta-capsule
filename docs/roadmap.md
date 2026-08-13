@@ -17,13 +17,13 @@ Produit : SPA **client-only**. ZIP / dossier restent dans le navigateur. Pas de 
 - Export HTML local d’un fil (téléchargement navigateur, pas d’upload)
 - Timeline annuelle déjà sur la synthèse (volume cumulé FB+IG)
 
-## P2 — confort
+## Fait (P2) — branche `feature/p2-comfort`
 
-- PWA (installable, cache app)
-- Mode sombre
+- PWA (installable, cache de l’app seulement — pas des archives)
+- Mode sombre (clair / sombre / système)
 - Virtualisation des threads longs
 - Recherche globale (messages + légendes)
-- Extraire 1 photo / 1 conv depuis l’archive (download)
+- Télécharger 1 photo (galerie / fil) et 1 conversation (HTML local)
 
 ## Plus tard, ou jamais
 

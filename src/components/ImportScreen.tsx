@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
+import { ThemeToggle } from './ThemeToggle';
 import { AlertCircle, Lock, ShieldCheck, WifiOff } from 'lucide-react';
 import { SupportLinks } from './SupportLinks';
 
@@ -64,7 +65,8 @@ export const ImportScreen: React.FC = () => {
     <div className="landing-grid relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 animate-grid-fade opacity-100" aria-hidden />
 
-      <div className="absolute top-5 right-5 z-20 sm:top-6 sm:right-6">
+      <div className="absolute top-5 right-5 z-20 sm:top-6 sm:right-6 flex items-center gap-2">
+        <ThemeToggle compact />
         <LanguageToggle compact />
       </div>
 
@@ -92,7 +94,7 @@ export const ImportScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleChooseClick}
-                    className="inline-flex items-center justify-center rounded-md bg-[#1C1B1A] px-5 py-3 font-sans text-sm font-semibold tracking-wide text-[#F7F1EA] transition-colors hover:bg-[#2F2C29]"
+                    className="inline-flex items-center justify-center rounded-md bg-ink-950 px-5 py-3 font-sans text-sm font-semibold tracking-wide text-brand-50 transition-colors hover:bg-ink-800"
                   >
                     {t('import.choose')}
                   </button>

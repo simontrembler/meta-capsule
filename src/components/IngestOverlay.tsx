@@ -16,7 +16,7 @@ export const IngestOverlay: React.FC<IngestOverlayProps> = ({
 }) => {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-950/45 px-4">
-      <div className="w-full max-w-md bg-[#FFFEFB] border border-ink-200 rounded-md shadow-lg p-6">
+      <div className="w-full max-w-md bg-white border border-ink-200 rounded-md shadow-lg p-6">
         <p className="font-display text-xl font-semibold text-ink-950 tracking-[-0.02em]">{title}</p>
         <p className="mt-1 text-sm text-ink-500">{hint}</p>
 

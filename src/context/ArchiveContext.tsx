@@ -97,8 +97,12 @@ interface ArchiveContextType {
   removePlatform: (platform: ArchivePlatform) => Promise<void>;
   resetArchive: () => Promise<void>;
   requestedConversationId: string | null;
-  openConversation: (id: string) => void;
+  requestedMessageId: string | null;
+  requestedMediaId: string | null;
+  openConversation: (id: string, messageId?: string) => void;
+  openMedia: (id: string) => void;
   clearRequestedConversation: () => void;
+  clearRequestedMedia: () => void;
 }
 
 const ArchiveContext = createContext<ArchiveContextType | undefined>(undefined);
@@ -125,6 +129,8 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [stats, setStats] = useState<IngestionStats | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [requestedConversationId, setRequestedConversationId] = useState<string | null>(null);
+  const [requestedMessageId, setRequestedMessageId] = useState<string | null>(null);
+  const [requestedMediaId, setRequestedMediaId] = useState<string | null>(null);
   const [supportsFileSystemAccess] = useState(() => isFileSystemAccessSupported());
   const [supportsDirectoryPicker] = useState(() => isDirectoryPickerSupported());
 
@@ -790,13 +796,24 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, []);
 
-  const openConversation = useCallback((id: string) => {
+  const openConversation = useCallback((id: string, messageId?: string) => {
     setRequestedConversationId(id);
+    setRequestedMessageId(messageId ?? null);
     setActiveTab('messages');
   }, []);
 
   const clearRequestedConversation = useCallback(() => {
     setRequestedConversationId(null);
+    setRequestedMessageId(null);
+  }, []);
+
+  const openMedia = useCallback((id: string) => {
+    setRequestedMediaId(id);
+    setActiveTab('gallery');
+  }, []);
+
+  const clearRequestedMedia = useCallback(() => {
+    setRequestedMediaId(null);
   }, []);
 
   const resetArchive = useCallback(async () => {
@@ -817,6 +834,8 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setFolderMaps({});
     handlesRef.current = {};
     setRequestedConversationId(null);
+    setRequestedMessageId(null);
+    setRequestedMediaId(null);
     setActiveTab('import');
 
     await db.clearAll();
@@ -880,8 +899,12 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         removePlatform,
         resetArchive,
         requestedConversationId,
+        requestedMessageId,
+        requestedMediaId,
         openConversation,
-        clearRequestedConversation
+        openMedia,
+        clearRequestedConversation,
+        clearRequestedMedia
       }}
     >
       {children}

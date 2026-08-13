@@ -360,7 +360,7 @@ export const DashboardModule: React.FC = () => {
                   <li key={msg.id}>
                     <button
                       type="button"
-                      onClick={() => openConversation(msg.conversationId)}
+                      onClick={() => openConversation(msg.conversationId, msg.id)}
                       className="w-full text-left"
                     >
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-700">

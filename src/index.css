@@ -68,3 +68,96 @@ select,
 .capsule-shell {
   border-radius: 999px;
 }
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #1c1b1a;
+  color: #f3f1ec;
+}
+
+html.dark .landing-grid {
+  background-color: #1c1b1a;
+  background-image:
+    linear-gradient(to right, rgba(243, 241, 236, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(243, 241, 236, 0.06) 1px, transparent 1px),
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgba(154, 107, 63, 0.16), transparent 60%);
+}
+
+html.dark .bg-white,
+html.dark .bg-\[\#FFFEFB\] {
+  background-color: #242220;
+}
+
+html.dark .bg-ink-50\/70,
+html.dark .bg-ink-50\/80 {
+  background-color: rgb(36 34 32 / 0.82);
+}
+
+html.dark .bg-ink-100 {
+  background-color: #2f2c29;
+}
+
+html.dark .border-ink-100,
+html.dark .border-ink-200,
+html.dark .border-ink-300 {
+  border-color: #433f3b;
+}
+
+html.dark .divide-ink-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-ink-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #433f3b;
+}
+
+html.dark .text-ink-950,
+html.dark .text-ink-900,
+html.dark .text-ink-800 {
+  color: #f3f1ec;
+}
+
+html.dark .text-ink-700,
+html.dark .text-ink-600 {
+  color: #d4cfc6;
+}
+
+html.dark .hover\:bg-ink-50:hover,
+html.dark .hover\:bg-white:hover {
+  background-color: #2f2c29;
+}
+
+html.dark .hover\:bg-ink-100:hover {
+  background-color: #3a3632;
+}
+
+html.dark .focus\:bg-white:focus {
+  background-color: #242220;
+}
+
+html.dark .bg-red-50 {
+  background-color: rgb(127 29 29 / 0.28);
+}
+
+html.dark .border-red-100,
+html.dark .border-red-200 {
+  border-color: rgb(248 113 113 / 0.35);
+}
+
+html.dark .text-red-600,
+html.dark .text-red-700,
+html.dark .text-red-800 {
+  color: #fecaca;
+}
+
+html.dark .bg-brand-50 {
+  background-color: rgb(154 107 63 / 0.16);
+}
+
+html.dark .border-brand-200 {
+  border-color: rgb(197 154 112 / 0.35);
+}
+
+html.dark .text-brand-800 {
+  color: #e8c9a8;
+}
