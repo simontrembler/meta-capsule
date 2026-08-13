@@ -15,7 +15,7 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ### Changé
 - Un ZIP Facebook sans JSON cœur est refusé avant d’effacer l’index (piège multi-parties)
-- Hint import / archives pour les exports Facebook multi-ZIP
+- Hint import / archives : extraire toutes les parties localement (PeaZip / 7-Zip) puis ouvrir le dossier — pas d’upload vers un merger en ligne
 
 ## [1.0.2] - 2026-08-13
 

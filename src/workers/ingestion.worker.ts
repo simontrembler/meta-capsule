@@ -247,7 +247,7 @@ self.onmessage = async (event: MessageEvent) => {
       facebookZipLacksCoreJson(entries)
     ) {
       throw new Error(
-        "Ce ZIP Facebook ne contient presque pas de métadonnées JSON (souvent une partie médias d’un export multi-fichiers). Importez le dossier dézippé fusionné, ou toutes les parties du même batch, pour ouvrir la capsule complète."
+        "Ce ZIP Facebook ne contient presque pas de métadonnées JSON (souvent une partie médias d’un export multi-fichiers). Extrayez toutes les parties du même batch dans un seul dossier avec un outil local open source (PeaZip, 7-Zip), puis importez ce dossier — n’uploadez pas vos archives Meta sur un site de fusion en ligne."
       );
     }
 

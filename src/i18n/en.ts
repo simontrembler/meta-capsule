@@ -83,7 +83,8 @@ export const en: Record<TranslationKey, string> = {
   'import.inProgress': 'Opening capsule…',
   'import.dontClose': 'Please keep this tab open during processing. Large archives may take a few minutes.',
   'import.privacyBadge': '100% local · no upload',
-  'import.facebookMultiZip': 'Facebook split across ZIPs? Import the merged unzipped folder (a media-only part often has no JSON).',
+  'import.facebookMultiZip': 'Facebook split across ZIPs? Meta Capsule imports one archive at a time. Extract every part into the same folder (the trees overlay), then use “Open a folder”. Local open-source tools: PeaZip or 7-Zip — don’t upload Meta ZIPs to an online merge site.',
+  'import.facebookMultiZipLink': 'PeaZip',
 
   // Settings
   'settings.privacyTitle': 'Security & Privacy',
@@ -107,7 +108,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact. For multi-ZIP Facebook: prefer the merged folder.',
+  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact. Multi-ZIP Facebook export: extract every part into one folder (PeaZip / 7-Zip), then open that folder — not a single ZIP.',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',

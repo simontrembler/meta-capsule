@@ -84,7 +84,8 @@ export const fr = {
   'import.inProgress': 'Ouverture de la capsule…',
   'import.dontClose': "Ne fermez pas cet onglet pendant le traitement. Les grosses archives peuvent prendre quelques minutes.",
   'import.privacyBadge': '100 % local · aucun upload',
-  'import.facebookMultiZip': 'Facebook en plusieurs ZIP ? Importez le dossier dézippé fusionné (une seule partie médias n’a souvent aucun JSON).',
+  'import.facebookMultiZip': 'Facebook en plusieurs ZIP ? Meta Capsule n’importe qu’une archive à la fois. Extrayez toutes les parties dans le même dossier (les arbres se superposent), puis utilisez « Ouvrir un dossier ». Outils open source locaux : PeaZip ou 7-Zip — ne téléversez pas vos ZIP Meta sur un site de fusion en ligne.',
+  'import.facebookMultiZipLink': 'PeaZip',
 
   // Settings
   'settings.privacyTitle': 'Sécurité et Confidentialité',
@@ -108,7 +109,7 @@ export const fr = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre. Pour Facebook multi-ZIP : préférez le dossier fusionné.',
+  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre. Export Facebook multi-ZIP : extrayez toutes les parties dans un dossier (PeaZip / 7-Zip), puis ouvrez ce dossier — pas un ZIP seul.',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',
