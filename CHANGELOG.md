@@ -6,6 +6,10 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+### Ajouté
+- Animation d’anneaux en orbite sur la capsule pendant l’ouverture d’une archive (landing)
+- Cartographies des exports Instagram et Facebook (`docs/*-export-map.md`)
+
 ## [1.0.1] - 2026-08-13
 
 ### Ajouté

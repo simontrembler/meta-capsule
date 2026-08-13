@@ -165,6 +165,11 @@ i18n : [`src/i18n/fr.ts`](src/i18n/fr.ts) / [`en.ts`](src/i18n/en.ts) via `Langu
 - Exports structurés et packs de souvenirs
 - Tests de charge sur exports multi-dizaines de Go
 
+Cartographies exports (tiers S–C, couverture ingest, pièges multi-ZIP) :
+
+- Instagram : [`docs/instagram-export-map.md`](docs/instagram-export-map.md)
+- Facebook : [`docs/facebook-export-map.md`](docs/facebook-export-map.md)
+
 ---
 
 ## Critères de santé (MVP)

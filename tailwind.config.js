@@ -57,12 +57,22 @@ export default {
           '0%, 100%': { opacity: '0.35' },
           '50%': { opacity: '0.7' },
         },
+        'capsule-orbit': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        'capsule-orbit-rev': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(-360deg)' },
+        },
       },
       animation: {
         'capsule-in': 'capsule-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both',
         'brand-in': 'brand-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both',
         'grid-fade': 'grid-fade 900ms ease-out both',
         'ring-pulse': 'ring-pulse 3.2s ease-in-out infinite',
+        'capsule-orbit': 'capsule-orbit 9s linear infinite',
+        'capsule-orbit-rev': 'capsule-orbit-rev 11s linear infinite',
       },
     },
   },

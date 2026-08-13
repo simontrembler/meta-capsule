@@ -5,6 +5,7 @@ import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
 import { AlertCircle, Lock, ShieldCheck, WifiOff } from 'lucide-react';
 import { SupportLinks } from './SupportLinks';
+import { LoadingCapsule } from './LoadingCapsule';
 
 export const ImportScreen: React.FC = () => {
   const {
@@ -210,10 +211,7 @@ export const ImportScreen: React.FC = () => {
           </>
         ) : (
           <div className="mx-auto flex w-full max-w-lg flex-col items-center py-10 text-center animate-capsule-in">
-            <div className="capsule-shell relative flex h-56 w-40 items-center justify-center border border-ink-300 bg-ink-50/80">
-              <div className="absolute inset-[12%] capsule-shell border border-brand-400/40 animate-ring-pulse" />
-              <span className="font-display text-3xl font-semibold text-ink-950">{ingestionProgress}%</span>
-            </div>
+            <LoadingCapsule progress={ingestionProgress} />
             <h2 className="mt-8 font-display text-2xl font-semibold text-ink-950">{t('import.inProgress')}</h2>
             <p className="mt-2 text-sm text-ink-500">{ingestionStatusText}</p>
             <div className="mt-6 h-1.5 w-full overflow-hidden bg-ink-200">
