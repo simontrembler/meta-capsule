@@ -78,6 +78,27 @@ export const en: Record<TranslationKey, string> = {
   'settings.languageTitle': 'Interface language',
   'settings.languageBody': 'Choose the display language for Meta Capsule. Your preference is saved locally.',
 
+  // Multi-archive
+  'archives.title': 'Archives',
+  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact.',
+  'archives.sidebarLabel': 'Archives',
+  'archives.facebook': 'Facebook',
+  'archives.instagram': 'Instagram',
+  'archives.empty': 'No archive yet',
+  'archives.add': 'Add',
+  'archives.replace': 'Replace',
+  'archives.remove': 'Remove',
+  'archives.reloadMedia': 'Reload media',
+  'archives.reactivate': 'Reactivate',
+  'archives.mediaReady': 'Media ready',
+  'archives.mediaPending': 'Permission pending',
+  'archives.mediaMissing': 'ZIP missing',
+  'archives.counts': '{messages} messages · {media} media · {posts} posts',
+  'archives.ingestTitle': 'Import in progress…',
+  'archives.ingestHint': 'You can keep the app open. The other archive stays intact.',
+  'archives.replaceConfirm': 'Replace the {platform} archive? Data for this platform will be deleted.',
+  'archives.removeConfirm': 'Remove the {platform} archive?',
+
   // Support
   'support.title': 'Project & support',
   'support.body': 'Meta Capsule is open source. The code lives on GitHub — and a coffee helps keep it going.',

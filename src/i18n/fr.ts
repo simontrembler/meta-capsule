@@ -78,6 +78,27 @@ export const fr = {
   'settings.languageTitle': 'Langue de l’interface',
   'settings.languageBody': 'Choisissez la langue d’affichage de Meta Capsule. Votre préférence est enregistrée localement.',
 
+  // Multi-archive
+  'archives.title': 'Archives',
+  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre.',
+  'archives.sidebarLabel': 'Archives',
+  'archives.facebook': 'Facebook',
+  'archives.instagram': 'Instagram',
+  'archives.empty': 'Aucune archive',
+  'archives.add': 'Ajouter',
+  'archives.replace': 'Remplacer',
+  'archives.remove': 'Retirer',
+  'archives.reloadMedia': 'Recharger médias',
+  'archives.reactivate': 'Réactiver',
+  'archives.mediaReady': 'Médias prêts',
+  'archives.mediaPending': 'Permission en attente',
+  'archives.mediaMissing': 'ZIP manquant',
+  'archives.counts': '{messages} messages · {media} médias · {posts} pubs',
+  'archives.ingestTitle': 'Import en cours…',
+  'archives.ingestHint': 'Vous pouvez laisser l’app ouverte. L’autre archive reste intacte.',
+  'archives.replaceConfirm': 'Remplacer l’archive {platform} ? Les données de cette plateforme seront effacées.',
+  'archives.removeConfirm': 'Retirer l’archive {platform} ?',
+
   // Support
   'support.title': 'Projet & soutien',
   'support.body': 'Meta Capsule est open source. Le code est sur GitHub — et un café aide à continuer.',

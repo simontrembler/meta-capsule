@@ -10,9 +10,17 @@ import { MessagingModule } from './components/MessagingModule';
 import { GalleryModule } from './components/GalleryModule';
 import { AdTransparencyModule } from './components/AdTransparencyModule';
 import { SettingsModule } from './components/SettingsModule';
+import { IngestOverlay } from './components/IngestOverlay';
 
 const AppContent: React.FC = () => {
-  const { activeTab, stats, isRestoringSession } = useArchive();
+  const {
+    activeTab,
+    stats,
+    isRestoringSession,
+    isIngesting,
+    ingestionProgress,
+    ingestionStatusText
+  } = useArchive();
   const { t } = useLanguage();
 
   if (isRestoringSession) {
@@ -55,6 +63,14 @@ const AppContent: React.FC = () => {
             {renderActiveModule()}
           </main>
         </div>
+        {isIngesting && (
+          <IngestOverlay
+            progress={ingestionProgress}
+            statusText={ingestionStatusText}
+            title={t('archives.ingestTitle')}
+            hint={t('archives.ingestHint')}
+          />
+        )}
       </div>
     </ShellProvider>
   );

@@ -1,31 +1,68 @@
-# 📦 Meta Capsule
+# Meta Capsule
 
-> **Redécouvrez vos archives Meta (Facebook & Instagram) en toute sécurité, 100% hors-ligne.**
+> Redécouvrez vos archives Facebook & Instagram — 100 % hors-ligne, dans votre navigateur.
 
-Meta Capsule est une application web client-side (SPA) conçue pour transformer vos exports de données "lifetime" Meta en un espace de consultation fluide, épuré et chaleureux. Loin du bruit des algorithmes, explorez vos souvenirs numériques en gardant le contrôle absolu sur votre vie privée.
+Meta Capsule est une application web (SPA) qui transforme un export de données Meta (fichier `.zip`) en espace de consultation clair : messages, médias, publications et transparence publicitaire. Aucun serveur applicatif ne reçoit vos archives.
 
-## ✨ Pourquoi Meta Capsule ?
+## Ce que c’est / n’est pas
 
-Les exports de données fournis par Meta peuvent peser plusieurs dizaines de gigaoctets et sont livrés sous forme de fichiers bruts (JSON/HTML) difficiles à lire. Meta Capsule décode, unifie et présente ces données de manière visuelle et instantanée.
+| Oui | Non |
+| --- | --- |
+| Traitement local du ZIP dans le navigateur | Connexion aux API Meta |
+| Persistance IndexedDB sur votre machine | Upload de vos données vers un backend |
+| Facebook **et** Instagram (archives additives) | Édition ou suppression sur vos comptes Meta |
+| Lecture seule de souvenirs déjà exportés | Réseau social, notifications, feed |
 
-*   **🔒 Confidentialité Absolue (Zero-Server) :** Vos données ne quittent **jamais** votre navigateur. Tout le traitement du fichier `.zip` se fait localement. L'application fonctionne même si vous coupez votre connexion Internet (Air-Gapped).
-*   **⚡ Ultra-Rapide (IndexedDB) :** Conçu pour supporter des archives massives (>20 Go) sans saturer la mémoire vive de votre appareil.
-*   **💬 Visualiseur Nostalgique :** Relisez vos conversations Messenger et Instagram Direct dans une interface de tchat familière et fluide.
-*   **🎯 Transparence Publicitaire :** Découvrez les centres d'intérêt et la liste des annonceurs que les algorithmes de Meta ont associés à votre profil.
+## Fonctionnalités
 
-## 🛠️ Stack Technique
+- **Import** — glisser-déposer ou sélecteur de fichier ; progression via Web Worker
+- **Multi-archives** — ajouter Facebook et Instagram séparément ; remplacer une plateforme sans effacer l’autre
+- **Synthèse** — volume de messages, médias, publications ; activité dans le temps ; profil de l’archive
+- **Messagerie** — conversations Messenger / Instagram Direct, recherche, pièces jointes à la demande
+- **Galerie** — grille chronologique, filtres origine (post / story / message), type, plateforme, mois
+- **Publicité** — centres d’intérêt et annonceurs présents dans l’export
+- **Médias** — métadonnées en base ; blobs extraits du ZIP à l’affichage (File System Access API sur Chrome/Edge pour survivre au F5)
+- **i18n** — interface FR / EN
+- **Souveraineté** — effacement intégral des données locales depuis les paramètres
 
-*   **Frontend :** [À définir : SvelteKit / React] + Vite
-*   **Base de données locale :** Dexie.js (IndexedDB)
-*   **Traitement des archives :** `@zip.js/zip.js` (via Web Workers)
+## Confidentialité
 
-## 🚀 Démarrage Rapide
+- Les archives ne quittent pas votre navigateur.
+- Pas de télémétrie, pas de trackers publicitaires.
+- Stockage local uniquement (IndexedDB + handles de fichiers quand le navigateur le permet).
+- Vous pouvez tout supprimer à tout moment.
 
-*(Instructions d'installation à venir)*
+Après le chargement des assets de l’app, la consultation peut se faire hors ligne (pas de PWA / service worker pour l’instant).
 
-## 🤝 Contribuer
+## Stack
 
-Ce projet est pensé pour le grand public. La simplicité, la performance et la sécurité sont nos priorités. Les PR et suggestions sont les bienvenues !
+- **UI** — React 18, TypeScript, Vite, Tailwind CSS, lucide-react
+- **Base locale** — Dexie.js (IndexedDB)
+- **Archives** — `@zip.js/zip.js` dans un Web Worker
+
+Détail technique : [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Démarrage
+
+```bash
+npm install
+npm run dev
+```
+
+Autres scripts : `npm run build`, `npm run preview`.
+
+Navigateur recommandé : **Chrome** ou **Edge** (File System Access API pour réattacher le ZIP après refresh). Firefox / Safari fonctionnent pour l’import et le texte ; les médias peuvent exiger de resélectionner le ZIP après un rechargement.
+
+## Obtenir une archive Meta
+
+1. Demandez un export de vos données auprès de [Facebook](https://www.facebook.com/dyi) et/ou [Instagram](https://www.instagram.com/download/request/) (format JSON de préférence).
+2. Téléchargez le `.zip` fourni par Meta.
+3. Ouvrez Meta Capsule et déposez le fichier dans la capsule. Ajoutez la seconde plateforme depuis la barre latérale ou les paramètres.
+
+## Contribuer
+
+PR et retours bienvenus — priorité à la simplicité, la performance et la confidentialité.
 
 ---
-*Fait avec soin pour redonner à chacun la souveraineté sur ses souvenirs numériques.*
+
+*Fait pour redonner à chacun la souveraineté sur ses souvenirs numériques.*
