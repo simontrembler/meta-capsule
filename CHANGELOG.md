@@ -6,6 +6,13 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-13
+
+### Ajouté
+- Version d’app lue depuis `package.json` (sidebar)
+- `CHANGELOG.md` et `npm run release` (patch / minor / major + tag)
+- Déploiement tower-server collé à un tag (`--tag vX.Y.Z`)
+
 ## [1.0.0] - 2026-08-13
 
 Première version publique (metacapsule.my).
