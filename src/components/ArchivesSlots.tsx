@@ -20,9 +20,9 @@ type Variant = 'settings' | 'sidebar';
 export const ArchivesSlots: React.FC<{ variant?: Variant }> = ({ variant = 'settings' }) => {
   const {
     stats,
-    zipFiles,
     zipAccessByPlatform,
     zipNames,
+    hasMediaAccess,
     isIngesting,
     supportsFileSystemAccess,
     pickAndIngestForPlatform,
@@ -76,7 +76,7 @@ export const ArchivesSlots: React.FC<{ variant?: Variant }> = ({ variant = 'sett
     <div className={compact ? 'space-y-2' : 'space-y-3'}>
       {PLATFORMS.map((platform) => {
         const meta = stats?.archives[platform];
-        const zipReady = Boolean(zipFiles[platform]);
+        const zipReady = hasMediaAccess(platform);
         const access = zipAccessByPlatform[platform] ?? (meta ? 'unavailable' : 'none');
         const name = zipNames[platform] || meta?.zipFileName;
 

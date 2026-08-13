@@ -18,7 +18,7 @@ function platformBadgeClass(platform: string): string {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, resetArchive, stats, getZipFile } = useArchive();
+  const { activeTab, setActiveTab, resetArchive, stats, getArchiveSource } = useArchive();
   const { t } = useLanguage();
   const { isNavOpen, closeNav } = useShell();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -126,7 +126,7 @@ export const Sidebar: React.FC = () => {
               <ProfileAvatar
                 name={stats.ownerName || t('common.user')}
                 relativePath={profile?.profilePicture}
-                zipFile={getZipFile(stats.platform)}
+                archiveSource={getArchiveSource(stats.platform)}
                 size="sm"
               />
               <div className="min-w-0">

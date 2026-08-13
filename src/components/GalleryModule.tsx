@@ -3,7 +3,7 @@ import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { MediaAttachment, MediaSource } from '../db/models';
-import { getMediaBlobUrl } from '../utils/zipMediaResolver';
+import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
 import {
   Image as ImageIcon,
   Film,
@@ -94,9 +94,9 @@ function platformChipActiveClass(platform: 'facebook' | 'instagram'): string {
 
 const GalleryItem: React.FC<{
   item: MediaAttachment;
-  zipFile: File | null;
+  archiveSource: MediaArchiveSource | File | null;
   onClick: () => void;
-}> = ({ item, zipFile, onClick }) => {
+}> = ({ item, archiveSource, onClick }) => {
   const { t } = useLanguage();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -123,13 +123,13 @@ const GalleryItem: React.FC<{
   }, []);
 
   useEffect(() => {
-    if (!isVisible || !zipFile) return;
+    if (!isVisible || !archiveSource) return;
 
     let isMounted = true;
     const resolveMedia = async () => {
       try {
         setIsLoading(true);
-        const url = await getMediaBlobUrl(zipFile, item.relativePath);
+        const url = await getMediaBlobUrl(archiveSource, item.relativePath);
         if (isMounted) {
           setBlobUrl(url);
           setError(false);
@@ -146,7 +146,7 @@ const GalleryItem: React.FC<{
     return () => {
       isMounted = false;
     };
-  }, [isVisible, item.relativePath, zipFile]);
+  }, [isVisible, item.relativePath, archiveSource]);
 
   return (
     <div
@@ -154,7 +154,7 @@ const GalleryItem: React.FC<{
       onClick={onClick}
       className="aspect-square rounded-md overflow-hidden border border-ink-200 bg-ink-100 group cursor-pointer relative transition-opacity hover:opacity-90"
     >
-      {!zipFile ? (
+      {!archiveSource ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center">
           <AlertCircle size={18} className="text-brand-600 mb-1" />
           <span className="text-[10px] text-ink-500 font-semibold leading-tight">{t('gallery.zipMissing')}</span>
@@ -210,7 +210,7 @@ const GalleryItem: React.FC<{
 };
 
 export const GalleryModule: React.FC = () => {
-  const { getZipFile } = useArchive();
+  const { getArchiveSource } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [allMedia, setAllMedia] = useState<MediaAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -310,10 +310,10 @@ export const GalleryModule: React.FC = () => {
   const openLightbox = async (index: number) => {
     setLightboxIndex(index);
     const item = filteredItems[index];
-    const zip = item ? getZipFile(item.platform) : null;
-    if (zip && item) {
+    const source = item ? getArchiveSource(item.platform) : null;
+    if (source && item) {
       try {
-        setLightboxBlobUrl(await getMediaBlobUrl(zip, item.relativePath));
+        setLightboxBlobUrl(await getMediaBlobUrl(source, item.relativePath));
       } catch (err) {
         console.error('Failed to open lightbox media:', err);
       }
@@ -333,10 +333,10 @@ export const GalleryModule: React.FC = () => {
     setLightboxIndex(newIndex);
     setLightboxBlobUrl(null);
     const item = filteredItems[newIndex];
-    const zip = item ? getZipFile(item.platform) : null;
-    if (zip && item) {
+    const source = item ? getArchiveSource(item.platform) : null;
+    if (source && item) {
       try {
-        setLightboxBlobUrl(await getMediaBlobUrl(zip, item.relativePath));
+        setLightboxBlobUrl(await getMediaBlobUrl(source, item.relativePath));
       } catch (err) {
         console.error('Failed to navigate lightbox media:', err);
       }
@@ -458,7 +458,7 @@ export const GalleryModule: React.FC = () => {
                     <GalleryItem
                       key={item.id}
                       item={item}
-                      zipFile={getZipFile(item.platform)}
+                      archiveSource={getArchiveSource(item.platform)}
                       onClick={() => openLightbox(globalIndex)}
                     />
                   );
@@ -524,7 +524,7 @@ export const GalleryModule: React.FC = () => {
             </button>
 
             <div className="flex-1 max-h-[70vh] flex items-center justify-center">
-              {!getZipFile(filteredItems[lightboxIndex].platform) ? (
+              {!getArchiveSource(filteredItems[lightboxIndex].platform) ? (
                 <div className="text-center space-y-2">
                   <AlertCircle size={48} className="text-brand-400 mx-auto" />
                   <p className="font-bold text-lg">{t('gallery.zipMissingMemory')}</p>

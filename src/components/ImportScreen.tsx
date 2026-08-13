@@ -9,6 +9,7 @@ export const ImportScreen: React.FC = () => {
   const {
     startIngestion,
     pickAndIngestZip,
+    pickAndIngestFolder,
     ingestFromDrop,
     supportsFileSystemAccess,
     isIngesting,
@@ -55,6 +56,10 @@ export const ImportScreen: React.FC = () => {
     fileInputRef.current?.click();
   }, [pickAndIngestZip, supportsFileSystemAccess]);
 
+  const handleChooseFolderClick = useCallback(async () => {
+    await pickAndIngestFolder();
+  }, [pickAndIngestFolder]);
+
   return (
     <div className="landing-grid relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 animate-grid-fade opacity-100" aria-hidden />
@@ -90,6 +95,13 @@ export const ImportScreen: React.FC = () => {
                     className="inline-flex items-center justify-center rounded-md bg-[#1C1B1A] px-5 py-3 font-sans text-sm font-semibold tracking-wide text-[#F7F1EA] transition-colors hover:bg-[#2F2C29]"
                   >
                     {t('import.choose')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleChooseFolderClick}
+                    className="inline-flex items-center justify-center rounded-md border border-ink-300 bg-white px-5 py-3 font-sans text-sm font-semibold tracking-wide text-ink-800 transition-colors hover:bg-ink-50"
+                  >
+                    {t('import.chooseFolder')}
                   </button>
                   <span className="inline-flex items-center gap-1.5 border border-ink-200 bg-ink-50/80 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-ink-500">
                     <Lock size={12} className="text-brand-600" />
@@ -149,7 +161,7 @@ export const ImportScreen: React.FC = () => {
                     className="relative z-10 flex w-[70%] flex-col items-center gap-3 px-4 py-8 text-center outline-none"
                   >
                     <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.28em] text-brand-600">
-                      .ZIP
+                      ZIP / DOSSIER
                     </span>
                     <span className="font-display text-lg font-semibold leading-snug text-ink-900 sm:text-xl">
                       {t('import.drop')}

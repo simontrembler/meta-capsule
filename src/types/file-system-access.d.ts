@@ -20,6 +20,15 @@ export interface FileSystemFileHandle extends FileSystemHandle {
   requestPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<FileSystemPermissionState>;
 }
 
+export interface FileSystemDirectoryHandle extends FileSystemHandle {
+  kind: 'directory';
+  getDirectoryHandle(name: string, options?: { create?: boolean }): Promise<FileSystemDirectoryHandle>;
+  getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
+  entries(): AsyncIterableIterator<[string, FileSystemFileHandle | FileSystemDirectoryHandle]>;
+  queryPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<FileSystemPermissionState>;
+  requestPermission?(descriptor?: FileSystemHandlePermissionDescriptor): Promise<FileSystemPermissionState>;
+}
+
 export interface OpenFilePickerOptions {
   multiple?: boolean;
   excludeAcceptAllOption?: boolean;
@@ -32,10 +41,19 @@ export interface OpenFilePickerOptions {
 declare global {
   interface Window {
     showOpenFilePicker?: (options?: OpenFilePickerOptions) => Promise<FileSystemFileHandle[]>;
+    showDirectoryPicker?: (options?: { mode?: FileSystemPermissionMode }) => Promise<FileSystemDirectoryHandle>;
   }
 
   interface DataTransferItem {
     getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
+  }
+
+  interface File {
+    webkitRelativePath?: string;
+  }
+
+  interface HTMLInputElement {
+    webkitdirectory?: boolean;
   }
 }
 

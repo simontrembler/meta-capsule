@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { getMediaBlobUrl } from '../utils/zipMediaResolver';
+import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
 
 interface ProfileAvatarProps {
   name: string;
   relativePath?: string | null;
-  zipFile: File | null;
+  zipFile?: File | null;
+  archiveSource?: MediaArchiveSource | File | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -22,7 +23,8 @@ const sizeClasses = {
 export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
   name,
   relativePath,
-  zipFile,
+  zipFile = null,
+  archiveSource = null,
   size = 'md',
   className = ''
 }) => {
@@ -32,13 +34,14 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
     let cancelled = false;
 
     const load = async () => {
-      if (!zipFile || !relativePath) {
+      const source = archiveSource ?? zipFile;
+      if (!source || !relativePath) {
         setBlobUrl(null);
         return;
       }
 
       try {
-        const url = await getMediaBlobUrl(zipFile, relativePath);
+        const url = await getMediaBlobUrl(source, relativePath);
         if (!cancelled) setBlobUrl(url);
       } catch (err) {
         console.warn('Unable to load profile photo from archive:', err);
@@ -50,7 +53,7 @@ export const ProfileAvatar: React.FC<ProfileAvatarProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [relativePath, zipFile]);
+  }, [relativePath, zipFile, archiveSource]);
 
   const initial = (name || '?').charAt(0).toUpperCase();
 

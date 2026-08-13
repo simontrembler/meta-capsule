@@ -1,4 +1,9 @@
-import type { FileSystemFileHandle, FileSystemPermissionState } from '../types/file-system-access';
+import type {
+  FileSystemDirectoryHandle,
+  FileSystemFileHandle,
+  FileSystemHandle,
+  FileSystemPermissionState
+} from '../types/file-system-access';
 import { db } from '../db/db';
 
 export type ArchivePlatform = 'facebook' | 'instagram';
@@ -12,6 +17,10 @@ export function archiveHandleId(platform: ArchivePlatform): string {
 
 export function isFileSystemAccessSupported(): boolean {
   return typeof window !== 'undefined' && typeof window.showOpenFilePicker === 'function';
+}
+
+export function isDirectoryPickerSupported(): boolean {
+  return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
 }
 
 export async function pickZipFileHandle(): Promise<FileSystemFileHandle | null> {
@@ -42,40 +51,50 @@ export async function pickZipFileHandle(): Promise<FileSystemFileHandle | null> 
   }
 }
 
-export async function getFileSystemHandleFromDrop(
+export async function pickDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+  if (!isDirectoryPickerSupported() || !window.showDirectoryPicker) {
+    return null;
+  }
+
+  try {
+    return await window.showDirectoryPicker({ mode: 'read' });
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function getDroppedArchiveHandle(
   dataTransfer: DataTransfer
-): Promise<FileSystemFileHandle | null> {
+): Promise<FileSystemHandle | null> {
   const item = dataTransfer.items?.[0];
   if (!item || typeof item.getAsFileSystemHandle !== 'function') {
     return null;
   }
 
-  const handle = await item.getAsFileSystemHandle();
-  if (!handle || handle.kind !== 'file') {
-    return null;
-  }
-
-  return handle as FileSystemFileHandle;
+  return (await item.getAsFileSystemHandle()) ?? null;
 }
 
 export async function queryReadPermission(
-  handle: FileSystemFileHandle
+  handle: FileSystemHandle
 ): Promise<FileSystemPermissionState> {
-  if (typeof handle.queryPermission === 'function') {
+  if ('queryPermission' in handle && typeof handle.queryPermission === 'function') {
     return handle.queryPermission({ mode: 'read' });
   }
   return 'granted';
 }
 
 export async function ensureReadPermission(
-  handle: FileSystemFileHandle
+  handle: FileSystemHandle
 ): Promise<FileSystemPermissionState> {
   const current = await queryReadPermission(handle);
   if (current === 'granted') {
     return current;
   }
 
-  if (typeof handle.requestPermission === 'function') {
+  if ('requestPermission' in handle && typeof handle.requestPermission === 'function') {
     return handle.requestPermission({ mode: 'read' });
   }
 
@@ -84,20 +103,20 @@ export async function ensureReadPermission(
 
 export async function saveArchiveHandle(
   platform: ArchivePlatform,
-  handle: FileSystemFileHandle
+  handle: FileSystemHandle
 ): Promise<void> {
   await db.fileHandles.put({
     id: archiveHandleId(platform),
     fileName: handle.name,
+    kind: handle.kind,
     handle
   });
-  // Drop legacy single-handle slot if present
   await db.fileHandles.delete(ARCHIVE_HANDLE_ID);
 }
 
 export async function loadArchiveHandle(
   platform: ArchivePlatform
-): Promise<FileSystemFileHandle | null> {
+): Promise<FileSystemHandle | null> {
   const record = await db.fileHandles.get(archiveHandleId(platform));
   if (record?.handle) return record.handle;
   return null;
@@ -106,7 +125,7 @@ export async function loadArchiveHandle(
 /** One-time migration from pre-multi-archive storage onto a known platform */
 export async function migrateLegacyArchiveHandle(
   platform: ArchivePlatform
-): Promise<FileSystemFileHandle | null> {
+): Promise<FileSystemHandle | null> {
   const existing = await loadArchiveHandle(platform);
   if (existing) return existing;
 
@@ -123,9 +142,9 @@ export async function migrateLegacyArchiveHandle(
 }
 
 export async function loadAllArchiveHandles(): Promise<
-  Partial<Record<ArchivePlatform, FileSystemFileHandle>>
+  Partial<Record<ArchivePlatform, FileSystemHandle>>
 > {
-  const result: Partial<Record<ArchivePlatform, FileSystemFileHandle>> = {};
+  const result: Partial<Record<ArchivePlatform, FileSystemHandle>> = {};
   for (const platform of ['facebook', 'instagram'] as ArchivePlatform[]) {
     const handle = await loadArchiveHandle(platform);
     if (handle) result[platform] = handle;
