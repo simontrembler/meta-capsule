@@ -80,7 +80,7 @@ export const Sidebar: React.FC = () => {
             <h1 className="font-display font-semibold mc-text-on-ink text-lg leading-none tracking-[-0.02em]">
               Meta Capsule
             </h1>
-            <span className="text-[11px] text-ink-400 font-medium">v1.0.0</span>
+            <span className="text-[11px] text-ink-400 font-medium">v{__APP_VERSION__}</span>
           </div>
           <button
             type="button"

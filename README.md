@@ -89,7 +89,9 @@ npm install
 npm run dev
 ```
 
-Autres scripts : `npm run build`, `npm run preview`.
+Autres scripts : `npm run build`, `npm run preview`, `npm run release -- patch|minor|major`.
+
+Historique des versions : [CHANGELOG.md](./CHANGELOG.md).
 
 - **UI** — React 18, TypeScript, Vite, Tailwind CSS, lucide-react
 - **Base locale** — Dexie.js (IndexedDB)
