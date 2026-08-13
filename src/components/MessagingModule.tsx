@@ -77,9 +77,9 @@ const MessageMedia: React.FC<{
   if (attachment.type === 'photo') {
     return (
       <div className="relative max-w-xs group">
-        <a href={blobUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-md border border-ink-200 hover:opacity-95 transition-opacity">
+        <div className="overflow-hidden rounded-md border border-ink-200">
           <img src={blobUrl} alt="" className="w-full max-h-60 object-cover" />
-        </a>
+        </div>
         <button
           type="button"
           onClick={() => triggerDownloadFromUrl(blobUrl, fileName)}

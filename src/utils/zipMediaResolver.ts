@@ -12,6 +12,51 @@ function normalizePath(relativePath: string): string {
   return relativePath.replace(/\\/g, '/').replace(/^\//, '');
 }
 
+function mimeFromPath(relativePath: string): string {
+  const ext = relativePath.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'png':
+      return 'image/png';
+    case 'gif':
+      return 'image/gif';
+    case 'webp':
+      return 'image/webp';
+    case 'heic':
+      return 'image/heic';
+    case 'mp4':
+    case 'm4v':
+      return 'video/mp4';
+    case 'mov':
+      return 'video/quicktime';
+    case 'webm':
+      return 'video/webm';
+    case 'mp3':
+      return 'audio/mpeg';
+    case 'm4a':
+      return 'audio/mp4';
+    case 'wav':
+      return 'audio/wav';
+    case 'ogg':
+      return 'audio/ogg';
+    case 'aac':
+      return 'audio/aac';
+    default:
+      return 'application/octet-stream';
+  }
+}
+
+function withMimeType(blob: Blob, relativePath: string): Blob {
+  const mime = mimeFromPath(relativePath);
+  if (mime === 'application/octet-stream') return blob;
+  if (blob.type && blob.type !== 'application/octet-stream' && blob.type !== '') {
+    return blob;
+  }
+  return blob.slice(0, blob.size, mime);
+}
+
 function cacheKey(source: MediaArchiveSource, path: string): string {
   const name =
     source.kind === 'zip' ? source.file.name : source.name;
@@ -64,7 +109,10 @@ async function blobFromZip(file: File, relativePath: string): Promise<Blob> {
       throw new Error(`Fichier non trouvé dans l'archive : ${relativePath}`);
     }
 
-    return await (entry as { getData: (w: unknown) => Promise<Blob> }).getData(new BlobWriter());
+    const raw = await (entry as { getData: (w: unknown) => Promise<Blob> }).getData(
+      new BlobWriter(mimeFromPath(normalizedPath))
+    );
+    return withMimeType(raw, normalizedPath);
   } finally {
     await zipReader.close();
   }
@@ -76,7 +124,8 @@ async function blobFromDirectory(
 ): Promise<Blob> {
   for (const variant of pathVariants(relativePath)) {
     try {
-      return await getFileByPath(root, variant);
+      const file = await getFileByPath(root, variant);
+      return withMimeType(file, relativePath);
     } catch {
       /* try next prefix */
     }
@@ -84,25 +133,27 @@ async function blobFromDirectory(
   throw new Error(`Fichier non trouvé dans le dossier : ${relativePath}`);
 }
 
-function blobFromFileMap(map: Map<string, File>, relativePath: string): File {
+function blobFromFileMap(map: Map<string, File>, relativePath: string): Blob {
   const normalized = normalizePath(relativePath);
   const direct = map.get(normalized);
-  if (direct) return direct;
+  if (direct) return withMimeType(direct, relativePath);
 
   const lower = normalized.toLowerCase();
   for (const [key, file] of map) {
-    if (key.toLowerCase() === lower) return file;
+    if (key.toLowerCase() === lower) return withMimeType(file, relativePath);
   }
 
   for (const variant of pathVariants(normalized)) {
     const hit = map.get(variant);
-    if (hit) return hit;
+    if (hit) return withMimeType(hit, relativePath);
   }
 
   const lastSegment = normalized.split('/').pop();
   if (lastSegment) {
     for (const [key, file] of map) {
-      if (key.endsWith(lastSegment) || file.name === lastSegment) return file;
+      if (key.endsWith(lastSegment) || file.name === lastSegment) {
+        return withMimeType(file, relativePath);
+      }
     }
   }
 
@@ -134,6 +185,7 @@ export async function getMediaBlobUrl(
   } else {
     blob = blobFromFileMap(resolved.map, normalizedPath);
   }
+  blob = withMimeType(blob, normalizedPath);
 
   const blobUrl = URL.createObjectURL(blob);
   blobUrlCache.set(key, blobUrl);

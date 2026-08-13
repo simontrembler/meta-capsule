@@ -18,9 +18,9 @@ Meta Capsule est une application web (SPA) qui transforme un export Meta (fichie
 
 | Landing | Synthèse |
 | --- | --- |
-| ![Écran d’accueil : ouvrir un ZIP ou un dossier](docs/screenshots/landing.png) | ![Synthèse : volumes, timeline, profil](docs/screenshots/synthese.png) |
+| ![Écran d’accueil : ouvrir un ZIP ou un dossier](docs/screenshots/landing.png) | ![Synthèse : volumes, timeline, profil — données masquées](docs/screenshots/synthese.png) |
 | **Messagerie** | **Galerie** |
-| ![Messagerie : liste de fils et conversation](docs/screenshots/messagerie.png) | ![Galerie : filtres et grille chronologique](docs/screenshots/galerie.png) |
+| ![Messagerie : liste de fils et conversation — données masquées](docs/screenshots/messagerie.png) | ![Galerie : filtres et grille chronologique — données masquées](docs/screenshots/galerie.png) |
 
 ## 📦 Obtenir une archive Meta
 
