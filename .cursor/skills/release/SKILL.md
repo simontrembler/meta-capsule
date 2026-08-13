@@ -3,14 +3,17 @@ name: release
 description: >-
   Ships a Meta Capsule version (patch/minor/major), updates CHANGELOG.md, and
   tags from package.json. Use when the user asks to release, bump the version,
-  ship to metacapsule.my, update the changelog, or create a new app version.
+  update the changelog, or create a new app version. Does not deploy — after
+  the tag is pushed, publish from the sibling tower-server repo.
 ---
 
 # Release Meta Capsule
 
 Single source of truth: `package.json` `version`. The sidebar reads `__APP_VERSION__` (injected by Vite). Never hardcode `v1.0.0` in UI.
 
-Do not bump on every PR. Release only when shipping to production (metacapsule.my).
+Do not bump on every PR. Release only when you intend to ship that version to production.
+
+Production deploy is **not** this repo. After the tag exists on origin, switch to `../tower-server` and use skill `publish-metacapsule` (`./scripts/publish-metacapsule.sh --tag vX.Y.Z`).
 
 ## Semver
 
@@ -36,13 +39,22 @@ The script folds Unreleased into `## [x.y.z] - YYYY-MM-DD`, bumps `package.json`
 
 ## After
 
-1. `git push --follow-tags` (only if the user asked to push).
-2. Deploy: `npm run build`, publish `dist/` to nginx (see `deploy/nginx.conf.example`).
-3. Smoke: sidebar shows `vX.Y.Z` on https://metacapsule.my.
+1. `git push --follow-tags` (only if the user asked to push). The release commit must reach `origin/master` (merge the PR, or release on master).
+2. Hand off deploy — do **not** `npm run build` or rsync from here. In `../tower-server`:
+
+   ```bash
+   ./scripts/publish-metacapsule.sh --tag vX.Y.Z
+   ```
+
+   That fetches the tag, builds `dist/` in Docker, rsyncs via `playbooks/deploy-metacapsule.yml`.
+3. Smoke: sidebar on https://metacapsule.my shows `vX.Y.Z`. Hard-refresh if the PWA sticks.
+
+If the user only asked to bump/tag, stop after step 1. If they asked to ship live, continue to tower-server (open that workspace or tell them to run the publish script).
 
 ## Do not
 
 - Edit `src/components/Sidebar.tsx` to change the version string
 - Run `npm version` or create tags by hand
-- Push or deploy unless the user asked
+- Push, or publish from tower-server, unless the user asked
 - Invent Unreleased notes — derive them from the commits since the last `v*` tag
+- Run `playbooks/apps.yml` or copy `dist/` onto nginx from this repo
