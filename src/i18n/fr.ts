@@ -122,6 +122,11 @@ export const fr = {
   'dashboard.noProfile': "Aucun profil détaillé trouvé dans l'archive.",
   'dashboard.openMessages': 'Consulter mes conversations',
   'dashboard.openGallery': 'Explorer la galerie photo',
+  'dashboard.onThisDay': 'Ce jour-là',
+  'dashboard.onThisDayEmpty': 'Rien à cette date dans l’archive — reviens un autre jour.',
+  'dashboard.yearsAgo': 'Il y a {count} an(s)',
+  'dashboard.topChats': 'Conversations les plus denses',
+  'dashboard.topChatsEmpty': 'Aucune conversation à classer.',
 
   // Messaging
   'messages.searchContact': 'Rechercher un contact...',
@@ -140,6 +145,8 @@ export const fr = {
   'messages.jumpTo': 'Aller à',
   'messages.jumpToAll': 'Toute la conversation',
   'messages.monthEmpty': 'Aucun message ce mois-là',
+  'messages.exportThread': 'Exporter',
+  'messages.exportThreadTitle': 'Télécharger ce fil en HTML (local)',
   'dashboard.interactions': '{year} : {count} interactions',
 
   // Gallery

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
-import type { UserProfile } from '../db/models';
+import type { Conversation, MediaAttachment, Message, UserProfile } from '../db/models';
 import { MessageSquare, Image, Award, User, Mail, Phone, ArrowRight } from 'lucide-react';
 import { ProfileAvatar } from './ProfileAvatar';
+import { loadOnThisDay, loadTopConversations } from '../utils/memories';
 
 interface DashboardStats {
   totalMessages: number;
@@ -15,11 +16,16 @@ interface DashboardStats {
 }
 
 export const DashboardModule: React.FC = () => {
-  const { stats, setActiveTab, getArchiveSource } = useArchive();
+  const { stats, setActiveTab, getArchiveSource, openConversation } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dbStats, setDbStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [onThisDay, setOnThisDay] = useState<{ messages: Message[]; media: MediaAttachment[] }>({
+    messages: [],
+    media: []
+  });
+  const [topChats, setTopChats] = useState<Conversation[]>([]);
 
   const primarySource = stats?.platform ? getArchiveSource(stats.platform) : null;
   const archiveName =
@@ -109,6 +115,21 @@ export const DashboardModule: React.FC = () => {
 
     loadDashboardData();
   }, [stats, dateLocale]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadMemories = async () => {
+      const [day, chats] = await Promise.all([loadOnThisDay(8), loadTopConversations(6)]);
+      if (!cancelled) {
+        setOnThisDay(day);
+        setTopChats(chats);
+      }
+    };
+    void loadMemories();
+    return () => {
+      cancelled = true;
+    };
+  }, [stats]);
 
   if (isLoading || !dbStats) {
     return (
@@ -323,6 +344,59 @@ export const DashboardModule: React.FC = () => {
               <ArrowRight size={14} className="text-ink-400 group-hover:text-brand-600 transition-colors" />
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white p-6 border border-ink-200 rounded-md">
+          <h3 className="font-display text-lg font-semibold text-ink-950 mb-1">{t('dashboard.onThisDay')}</h3>
+          {onThisDay.messages.length === 0 && onThisDay.media.length === 0 ? (
+            <p className="text-sm text-ink-400 mt-3">{t('dashboard.onThisDayEmpty')}</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {onThisDay.messages.slice(0, 5).map((msg) => {
+                const years = new Date().getFullYear() - new Date(msg.timestamp).getFullYear();
+                return (
+                  <li key={msg.id}>
+                    <button
+                      type="button"
+                      onClick={() => openConversation(msg.conversationId)}
+                      className="w-full text-left"
+                    >
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-700">
+                        {years > 0 ? t('dashboard.yearsAgo', { count: years }) : new Date(msg.timestamp).getFullYear()}
+                      </p>
+                      <p className="text-sm text-ink-800 line-clamp-2 mt-0.5">{msg.content}</p>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="bg-white p-6 border border-ink-200 rounded-md">
+          <h3 className="font-display text-lg font-semibold text-ink-950 mb-1">{t('dashboard.topChats')}</h3>
+          {topChats.length === 0 ? (
+            <p className="text-sm text-ink-400 mt-3">{t('dashboard.topChatsEmpty')}</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-ink-100">
+              {topChats.map((conv) => (
+                <li key={conv.id}>
+                  <button
+                    type="button"
+                    onClick={() => openConversation(conv.id)}
+                    className="w-full flex items-center justify-between gap-3 py-2.5 text-left hover:bg-ink-50"
+                  >
+                    <span className="text-sm font-semibold text-ink-900 truncate">{conv.title}</span>
+                    <span className="text-[11px] text-ink-400 font-semibold shrink-0">
+                      {t('messages.messagesCount', { count: conv.messageCount.toLocaleString(dateLocale) })}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

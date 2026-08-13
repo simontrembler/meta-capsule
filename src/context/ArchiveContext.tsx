@@ -96,6 +96,9 @@ interface ArchiveContextType {
   pickZipForMedia: (platform?: ArchivePlatform) => Promise<void>;
   removePlatform: (platform: ArchivePlatform) => Promise<void>;
   resetArchive: () => Promise<void>;
+  requestedConversationId: string | null;
+  openConversation: (id: string) => void;
+  clearRequestedConversation: () => void;
 }
 
 const ArchiveContext = createContext<ArchiveContextType | undefined>(undefined);
@@ -121,6 +124,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [ingestionError, setIngestionError] = useState<string | null>(null);
   const [stats, setStats] = useState<IngestionStats | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState(true);
+  const [requestedConversationId, setRequestedConversationId] = useState<string | null>(null);
   const [supportsFileSystemAccess] = useState(() => isFileSystemAccessSupported());
   const [supportsDirectoryPicker] = useState(() => isDirectoryPickerSupported());
 
@@ -786,6 +790,15 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, []);
 
+  const openConversation = useCallback((id: string) => {
+    setRequestedConversationId(id);
+    setActiveTab('messages');
+  }, []);
+
+  const clearRequestedConversation = useCallback(() => {
+    setRequestedConversationId(null);
+  }, []);
+
   const resetArchive = useCallback(async () => {
     if (workerRef.current) {
       workerRef.current.terminate();
@@ -803,6 +816,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setDirectoryHandles({});
     setFolderMaps({});
     handlesRef.current = {};
+    setRequestedConversationId(null);
     setActiveTab('import');
 
     await db.clearAll();
@@ -864,7 +878,10 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         reauthorizeZipAccess,
         pickZipForMedia,
         removePlatform,
-        resetArchive
+        resetArchive,
+        requestedConversationId,
+        openConversation,
+        clearRequestedConversation
       }}
     >
       {children}
