@@ -25,6 +25,11 @@ Produit : SPA **client-only**. ZIP / dossier restent dans le navigateur. Pas de 
 - Recherche globale (messages + légendes)
 - Télécharger 1 photo (galerie / fil) et 1 conversation (HTML local)
 
+## Ensuite (docs / polish)
+
+- Démo publique (hébergement static + archive **fictive** one-click) + lien dans le README
+- Captures d’écran dans le README — **fait** (`docs/screenshots/`) ; recadrer si e-mail / téléphone / contacts réels ne doivent pas être publics
+
 ## Plus tard, ou jamais
 
 - Sync cloud, login, analytics, LLM serveur
