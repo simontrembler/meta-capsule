@@ -47,7 +47,11 @@ The script folds Unreleased into `## [x.y.z] - YYYY-MM-DD`, bumps `package.json`
    ```
 
    That fetches the tag, builds `dist/` in Docker, rsyncs via `playbooks/deploy-metacapsule.yml`.
-3. Smoke: sidebar on https://metacapsule.my shows `vX.Y.Z`. Hard-refresh if the PWA sticks.
+3. Smoke: open an **archive** on https://metacapsule.my — the sidebar (not the landing) should show `vX.Y.Z`.
+
+### If the UI still shows the previous version
+
+The publish often succeeded; the browser/PWA is caching the old JS. Hard-refresh (Ctrl+Shift+R). If needed: unregister the service worker for the origin, then reload. Do not bump again until you confirm the live bundle is wrong.
 
 If the user only asked to bump/tag, stop after step 1. If they asked to ship live, continue to tower-server (open that workspace or tell them to run the publish script).
 
