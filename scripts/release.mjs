@@ -17,15 +17,15 @@ if (!['patch', 'minor', 'major'].includes(bump)) {
 }
 
 function run(cmd) {
-  return execSync(cmd, { cwd: root, encoding: 'utf-8' }).trim();
+  return execSync(cmd, { cwd: root, encoding: 'utf-8' }).replace(/\n$/, '');
 }
 
 const dirty = run('git status --porcelain');
 const dirtyFiles = dirty
   ? dirty
       .split('\n')
-      .map((line) => line.slice(3))
       .filter(Boolean)
+      .map((line) => line.slice(3).trim())
   : [];
 const allowedDirty = new Set(['CHANGELOG.md']);
 const unexpected = dirtyFiles.filter((file) => !allowedDirty.has(file));
