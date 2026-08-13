@@ -12,6 +12,7 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 - Annonceurs `advertisers_using_your_activity_or_information`
 - GPS depuis EXIF JSON export (`media.latitude` / `longitude`)
 - Posts Instagram sauvegardés (`saved_posts`)
+- Carte Leaflet (OSM) dans la galerie + widget synthèse « J’y étais »
 
 ### Changé
 - Un ZIP Facebook sans JSON cœur est refusé avant d’effacer l’index (piège multi-parties)

@@ -154,6 +154,10 @@ export const en: Record<TranslationKey, string> = {
   'dashboard.yearsAgo': '{count} year(s) ago',
   'dashboard.topChats': 'Busiest conversations',
   'dashboard.topChatsEmpty': 'No conversations to rank.',
+  'dashboard.placesTitle': 'I was there',
+  'dashboard.placesSubtitle': 'Places from GPS coordinates in your media',
+  'dashboard.placesEmpty': 'No GPS coordinates in this export — often missing outside story/post EXIF.',
+  'dashboard.placesOpen': 'Open the map ({count})',
 
   // Messaging
   'messages.searchContact': 'Search a contact...',
@@ -203,6 +207,14 @@ export const en: Record<TranslationKey, string> = {
   'gallery.sourceLabel.message': 'Message',
   'gallery.sourceLabel.other': 'Other',
   'gallery.downloadPhoto': 'Download',
+  'gallery.view.grid': 'Grid',
+  'gallery.view.map': 'Map ({count})',
+  'gallery.mapCount': '{count} geotagged media (filters applied)',
+
+  'map.emptyTitle': 'No places to show',
+  'map.emptyHint': 'No GPS coordinates in the filtered media. Re-import an archive with EXIF, or widen filters.',
+  'map.tilesHint': 'OpenStreetMap basemap (network required). Your GPS points stay local — nothing is sent to Meta Capsule.',
+  'map.tilesHintShort': 'OSM tiles · network · local points',
 
   // Ads
   'ads.loading': 'Loading advertising data...',

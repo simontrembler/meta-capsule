@@ -3,8 +3,9 @@ import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { Conversation, MediaAttachment, Message, UserProfile } from '../db/models';
-import { MessageSquare, Image, Award, User, Mail, Phone, ArrowRight } from 'lucide-react';
+import { MessageSquare, Image, Award, User, Mail, Phone, ArrowRight, MapPin } from 'lucide-react';
 import { ProfileAvatar } from './ProfileAvatar';
+import { PlacesMap, hasGpsCoords } from './PlacesMap';
 import { loadOnThisDay, loadTopConversations } from '../utils/memories';
 
 interface DashboardStats {
@@ -16,7 +17,7 @@ interface DashboardStats {
 }
 
 export const DashboardModule: React.FC = () => {
-  const { stats, setActiveTab, getArchiveSource, openConversation } = useArchive();
+  const { stats, setActiveTab, getArchiveSource, openConversation, openGalleryMap } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dbStats, setDbStats] = useState<DashboardStats | null>(null);
@@ -26,6 +27,8 @@ export const DashboardModule: React.FC = () => {
     media: []
   });
   const [topChats, setTopChats] = useState<Conversation[]>([]);
+  const [placesMedia, setPlacesMedia] = useState<MediaAttachment[]>([]);
+  const [placesCount, setPlacesCount] = useState(0);
 
   const primarySource = stats?.platform ? getArchiveSource(stats.platform) : null;
   const archiveName =
@@ -119,10 +122,17 @@ export const DashboardModule: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     const loadMemories = async () => {
-      const [day, chats] = await Promise.all([loadOnThisDay(8), loadTopConversations(6)]);
+      const [day, chats, mediaRows] = await Promise.all([
+        loadOnThisDay(8),
+        loadTopConversations(6),
+        db.media.toArray()
+      ]);
       if (!cancelled) {
         setOnThisDay(day);
         setTopChats(chats);
+        const geotagged = mediaRows.filter(hasGpsCoords);
+        setPlacesCount(geotagged.length);
+        setPlacesMedia(geotagged.slice(0, 200));
       }
     };
     void loadMemories();
@@ -376,28 +386,53 @@ export const DashboardModule: React.FC = () => {
         </div>
 
         <div className="bg-white p-6 border border-ink-200 rounded-md">
-          <h3 className="font-display text-lg font-semibold text-ink-950 mb-1">{t('dashboard.topChats')}</h3>
-          {topChats.length === 0 ? (
-            <p className="text-sm text-ink-400 mt-3">{t('dashboard.topChatsEmpty')}</p>
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <div>
+              <h3 className="font-display text-lg font-semibold text-ink-950">{t('dashboard.placesTitle')}</h3>
+              <p className="text-xs text-ink-400 mt-0.5">{t('dashboard.placesSubtitle')}</p>
+            </div>
+            <MapPin size={18} className="text-brand-600 shrink-0 mt-1" />
+          </div>
+          {placesCount === 0 ? (
+            <p className="text-sm text-ink-400 mt-3">{t('dashboard.placesEmpty')}</p>
           ) : (
-            <ul className="mt-4 divide-y divide-ink-100">
-              {topChats.map((conv) => (
-                <li key={conv.id}>
-                  <button
-                    type="button"
-                    onClick={() => openConversation(conv.id)}
-                    className="w-full flex items-center justify-between gap-3 py-2.5 text-left hover:bg-ink-50"
-                  >
-                    <span className="text-sm font-semibold text-ink-900 truncate">{conv.title}</span>
-                    <span className="text-[11px] text-ink-400 font-semibold shrink-0">
-                      {t('messages.messagesCount', { count: conv.messageCount.toLocaleString(dateLocale) })}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4 space-y-3">
+              <PlacesMap items={placesMedia} compact className="rounded-md" />
+              <button
+                type="button"
+                onClick={() => openGalleryMap()}
+                className="w-full flex items-center justify-between px-3 py-2.5 border border-ink-200 text-ink-700 text-xs font-semibold transition-colors group hover:border-brand-500 hover:bg-brand-50 hover:text-brand-800"
+              >
+                <span>{t('dashboard.placesOpen', { count: placesCount })}</span>
+                <ArrowRight size={14} className="text-ink-400 group-hover:text-brand-600 transition-colors" />
+              </button>
+            </div>
           )}
         </div>
+      </div>
+
+      <div className="bg-white p-6 border border-ink-200 rounded-md">
+        <h3 className="font-display text-lg font-semibold text-ink-950 mb-1">{t('dashboard.topChats')}</h3>
+        {topChats.length === 0 ? (
+          <p className="text-sm text-ink-400 mt-3">{t('dashboard.topChatsEmpty')}</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-ink-100">
+            {topChats.map((conv) => (
+              <li key={conv.id}>
+                <button
+                  type="button"
+                  onClick={() => openConversation(conv.id)}
+                  className="w-full flex items-center justify-between gap-3 py-2.5 text-left hover:bg-ink-50"
+                >
+                  <span className="text-sm font-semibold text-ink-900 truncate">{conv.title}</span>
+                  <span className="text-[11px] text-ink-400 font-semibold shrink-0">
+                    {t('messages.messagesCount', { count: conv.messageCount.toLocaleString(dateLocale) })}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

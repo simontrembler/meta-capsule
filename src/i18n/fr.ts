@@ -155,6 +155,10 @@ export const fr = {
   'dashboard.yearsAgo': 'Il y a {count} an(s)',
   'dashboard.topChats': 'Conversations les plus denses',
   'dashboard.topChatsEmpty': 'Aucune conversation à classer.',
+  'dashboard.placesTitle': 'J’y étais',
+  'dashboard.placesSubtitle': 'Lieux tirés des coordonnées GPS de vos médias',
+  'dashboard.placesEmpty': 'Aucune coordonnée GPS dans cet export — souvent absentes hors EXIF stories/posts.',
+  'dashboard.placesOpen': 'Voir la carte ({count})',
 
   // Messaging
   'messages.searchContact': 'Rechercher un contact...',
@@ -204,6 +208,14 @@ export const fr = {
   'gallery.sourceLabel.message': 'Message',
   'gallery.sourceLabel.other': 'Autre',
   'gallery.downloadPhoto': 'Télécharger',
+  'gallery.view.grid': 'Grille',
+  'gallery.view.map': 'Carte ({count})',
+  'gallery.mapCount': '{count} médias géolocalisés (filtres appliqués)',
+
+  'map.emptyTitle': 'Aucun lieu à afficher',
+  'map.emptyHint': 'Aucune coordonnée GPS dans les médias filtrés. Réimportez une archive avec EXIF, ou élargissez les filtres.',
+  'map.tilesHint': 'Fond de carte OpenStreetMap (réseau requis). Vos points GPS restent locaux — rien n’est envoyé à Meta Capsule.',
+  'map.tilesHintShort': 'Tuiles OSM · réseau · points locaux',
 
   // Ads
   'ads.loading': 'Chargement des données publicitaires...',

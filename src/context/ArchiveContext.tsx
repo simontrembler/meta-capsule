@@ -99,10 +99,14 @@ interface ArchiveContextType {
   requestedConversationId: string | null;
   requestedMessageId: string | null;
   requestedMediaId: string | null;
+  /** When set, gallery opens in map view (cleared by GalleryModule). */
+  requestedGalleryView: 'grid' | 'map' | null;
   openConversation: (id: string, messageId?: string) => void;
   openMedia: (id: string) => void;
+  openGalleryMap: () => void;
   clearRequestedConversation: () => void;
   clearRequestedMedia: () => void;
+  clearRequestedGalleryView: () => void;
 }
 
 const ArchiveContext = createContext<ArchiveContextType | undefined>(undefined);
@@ -131,6 +135,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [requestedConversationId, setRequestedConversationId] = useState<string | null>(null);
   const [requestedMessageId, setRequestedMessageId] = useState<string | null>(null);
   const [requestedMediaId, setRequestedMediaId] = useState<string | null>(null);
+  const [requestedGalleryView, setRequestedGalleryView] = useState<'grid' | 'map' | null>(null);
   const [supportsFileSystemAccess] = useState(() => isFileSystemAccessSupported());
   const [supportsDirectoryPicker] = useState(() => isDirectoryPickerSupported());
 
@@ -809,11 +814,21 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const openMedia = useCallback((id: string) => {
     setRequestedMediaId(id);
+    setRequestedGalleryView('grid');
+    setActiveTab('gallery');
+  }, []);
+
+  const openGalleryMap = useCallback(() => {
+    setRequestedGalleryView('map');
     setActiveTab('gallery');
   }, []);
 
   const clearRequestedMedia = useCallback(() => {
     setRequestedMediaId(null);
+  }, []);
+
+  const clearRequestedGalleryView = useCallback(() => {
+    setRequestedGalleryView(null);
   }, []);
 
   const resetArchive = useCallback(async () => {
@@ -836,6 +851,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setRequestedConversationId(null);
     setRequestedMessageId(null);
     setRequestedMediaId(null);
+    setRequestedGalleryView(null);
     setActiveTab('import');
 
     await db.clearAll();
@@ -901,10 +917,13 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         requestedConversationId,
         requestedMessageId,
         requestedMediaId,
+        requestedGalleryView,
         openConversation,
         openMedia,
+        openGalleryMap,
         clearRequestedConversation,
-        clearRequestedMedia
+        clearRequestedMedia,
+        clearRequestedGalleryView
       }}
     >
       {children}
