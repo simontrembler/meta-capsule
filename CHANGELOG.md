@@ -6,6 +6,8 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-13
+
 ### Ajouté
 - Ingest Messenger Facebook : `archived_threads`, `filtered_threads`, `e2ee_cutover`
 - Albums / photos non classées / vidéos Facebook
