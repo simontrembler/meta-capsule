@@ -5,7 +5,8 @@ import { db } from '../db/db';
 import type { Conversation, Message, MessageAttachment } from '../db/models';
 import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
 import Dexie from 'dexie';
-import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic } from 'lucide-react';
+import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic, Download } from 'lucide-react';
+import { downloadConversationHtml } from '../utils/memories';
 
 // Helper component to render media attachments dynamically
 const MessageMedia: React.FC<{ attachment: MessageAttachment; archiveSource: MediaArchiveSource | File | null }> = ({ attachment, archiveSource }) => {
@@ -163,7 +164,7 @@ function formatMonthLabel(key: string, dateLocale: string): string {
 }
 
 export const MessagingModule: React.FC = () => {
-  const { getArchiveSource } = useArchive();
+  const { getArchiveSource, requestedConversationId, clearRequestedConversation } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -198,6 +199,15 @@ export const MessagingModule: React.FC = () => {
 
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    if (!requestedConversationId || conversations.length === 0) return;
+    const match = conversations.find((conv) => conv.id === requestedConversationId);
+    if (match) {
+      setActiveConv(match);
+      clearRequestedConversation();
+    }
+  }, [requestedConversationId, conversations, clearRequestedConversation]);
 
   // 2. Filter conversations based on search
   useEffect(() => {
@@ -388,6 +398,15 @@ export const MessagingModule: React.FC = () => {
     }
   };
 
+  const exportActiveThread = async () => {
+    if (!activeConv) return;
+    const all = await db.messages
+      .where('[conversationId+timestamp]')
+      .between([activeConv.id, Dexie.minKey], [activeConv.id, Dexie.maxKey])
+      .toArray();
+    downloadConversationHtml(activeConv, all);
+  };
+
   const jumpToMonth = async (key: string) => {
     if (!activeConv) return;
     if (!key) {
@@ -535,6 +554,15 @@ export const MessagingModule: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
+                <button
+                  type="button"
+                  onClick={() => void exportActiveThread()}
+                  title={t('messages.exportThreadTitle')}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-ink-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-50"
+                >
+                  <Download size={14} />
+                  <span className="hidden sm:inline">{t('messages.exportThread')}</span>
+                </button>
                 {monthOptions.length > 0 && (
                   <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
                     <span className="hidden sm:inline">{t('messages.jumpTo')}</span>
