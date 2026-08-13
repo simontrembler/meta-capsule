@@ -66,6 +66,6 @@ writeFileSync(changelogPath, nextChangelog);
 run(`npm version ${bump} --no-git-tag-version`);
 run('git add package.json package-lock.json CHANGELOG.md');
 run(`git commit -m "chore: release v${next}"`);
-run(`git tag v${next}`);
+run(`git tag -a v${next} -m "v${next}"`);
 
 console.log(`Released v${next}. Push with: git push --follow-tags`);
