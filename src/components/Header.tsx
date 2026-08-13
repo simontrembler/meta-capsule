@@ -1,9 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useArchive, type ArchivePlatform } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useShell } from '../context/ShellContext';
 import { LanguageToggle } from './LanguageToggle';
-import { ShieldCheck, AlertTriangle, FileCheck, Upload, KeyRound, Menu } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
+import { GlobalSearch } from './GlobalSearch';
+import { ShieldCheck, AlertTriangle, FileCheck, Upload, KeyRound, Menu, Search } from 'lucide-react';
 import type { TranslationKey } from '../i18n';
 
 function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
@@ -86,6 +88,18 @@ export const Header: React.FC = () => {
   const { activeTab, zipAccessState, stats, hasMediaAccess } = useArchive();
   const { t } = useLanguage();
   const { toggleNav } = useShell();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const titleKeys: Record<string, TranslationKey> = {
     dashboard: 'title.dashboard',
@@ -100,7 +114,7 @@ export const Header: React.FC = () => {
   const anyPending = platforms.some((p) => !hasMediaAccess(p) && stats?.archives[p] != null);
 
   return (
-    <header className="min-h-14 h-auto md:h-16 bg-[#FFFEFB] border-b border-ink-200 px-3 sm:px-4 md:px-6 py-2 md:py-0 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0">
+    <header className="min-h-14 h-auto md:h-16 bg-white border-b border-ink-200 px-3 sm:px-4 md:px-6 py-2 md:py-0 flex items-center justify-between gap-2 flex-wrap sticky top-0 z-10 shrink-0">
       <div className="flex items-center gap-2 min-w-0">
         <button
           type="button"
@@ -116,6 +130,16 @@ export const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="p-2 border border-ink-200 text-ink-700 hover:bg-ink-100"
+          title={t('search.open')}
+          aria-label={t('search.open')}
+        >
+          <Search size={14} />
+        </button>
+        <ThemeToggle compact />
         <LanguageToggle compact />
 
         <div
@@ -143,6 +167,7 @@ export const Header: React.FC = () => {
           </div>
         )}
       </div>
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 };

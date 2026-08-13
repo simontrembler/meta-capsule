@@ -10,11 +10,34 @@ export const fr = {
   'common.filters': 'Filtres',
   'common.explorer': 'Explorateur',
 
+  'common.download': 'Télécharger',
+
   // Language
   'lang.label': 'Langue',
   'lang.fr': 'Français',
   'lang.en': 'English',
   'lang.switchTo': 'English',
+
+  // Theme
+  'theme.label': 'Apparence',
+  'theme.body': 'Clair, sombre, ou suivre le système. Enregistré localement.',
+  'theme.system': 'Système',
+  'theme.light': 'Clair',
+  'theme.dark': 'Sombre',
+  'theme.systemShort': 'Auto',
+  'theme.lightShort': 'Clair',
+  'theme.darkShort': 'Sombre',
+  'theme.cycleTitle': 'Changer le thème (système / clair / sombre)',
+
+  // Search
+  'search.open': 'Recherche globale',
+  'search.globalTitle': 'Rechercher dans la capsule',
+  'search.placeholder': 'Messages et légendes…',
+  'search.hint': 'Tapez au moins 2 caractères. Raccourci : Ctrl+K.',
+  'search.empty': 'Aucun résultat dans les messages ou les légendes.',
+  'search.close': 'Fermer la recherche',
+  'search.kindMessage': 'Message',
+  'search.kindPost': 'Légende',
 
   // Nav / titles
   'nav.dashboard': 'Synthèse',
@@ -73,6 +96,9 @@ export const fr = {
   'settings.telemetryValue': 'Désactivée',
   'settings.internet': 'Accès Internet :',
   'settings.internetValue': "Non requis (l'application fonctionne hors-ligne)",
+  'settings.appearanceTitle': 'Apparence',
+  'settings.pwaTitle': 'Application installable',
+  'settings.pwaBody': 'Meta Capsule peut s’installer comme PWA. Le navigateur met en cache l’interface, jamais vos archives ZIP ou IndexedDB.',
   'settings.dataTitle': 'Gestion des Données Locales',
   'settings.dataBody': "Vous pouvez à tout moment supprimer l'intégralité des données importées de votre navigateur. Cette action est irréversible.",
   'settings.deleteData': 'Supprimer toutes les données locales',
@@ -122,6 +148,11 @@ export const fr = {
   'dashboard.noProfile': "Aucun profil détaillé trouvé dans l'archive.",
   'dashboard.openMessages': 'Consulter mes conversations',
   'dashboard.openGallery': 'Explorer la galerie photo',
+  'dashboard.onThisDay': 'Ce jour-là',
+  'dashboard.onThisDayEmpty': 'Rien à cette date dans l’archive — reviens un autre jour.',
+  'dashboard.yearsAgo': 'Il y a {count} an(s)',
+  'dashboard.topChats': 'Conversations les plus denses',
+  'dashboard.topChatsEmpty': 'Aucune conversation à classer.',
 
   // Messaging
   'messages.searchContact': 'Rechercher un contact...',
@@ -140,6 +171,9 @@ export const fr = {
   'messages.jumpTo': 'Aller à',
   'messages.jumpToAll': 'Toute la conversation',
   'messages.monthEmpty': 'Aucun message ce mois-là',
+  'messages.exportThread': 'Exporter',
+  'messages.exportThreadTitle': 'Télécharger ce fil en HTML (local)',
+  'messages.downloadPhoto': 'Télécharger la photo',
   'dashboard.interactions': '{year} : {count} interactions',
 
   // Gallery
@@ -167,6 +201,7 @@ export const fr = {
   'gallery.sourceLabel.story': 'Story',
   'gallery.sourceLabel.message': 'Message',
   'gallery.sourceLabel.other': 'Autre',
+  'gallery.downloadPhoto': 'Télécharger',
 
   // Ads
   'ads.loading': 'Chargement des données publicitaires...',

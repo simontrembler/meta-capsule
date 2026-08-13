@@ -9,12 +9,34 @@ export const en: Record<TranslationKey, string> = {
   'common.all': 'All',
   'common.filters': 'Filters',
   'common.explorer': 'Explorer',
+  'common.download': 'Download',
 
   // Language
   'lang.label': 'Language',
   'lang.fr': 'Français',
   'lang.en': 'English',
   'lang.switchTo': 'Français',
+
+  // Theme
+  'theme.label': 'Appearance',
+  'theme.body': 'Light, dark, or follow the system. Saved locally.',
+  'theme.system': 'System',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+  'theme.systemShort': 'Auto',
+  'theme.lightShort': 'Light',
+  'theme.darkShort': 'Dark',
+  'theme.cycleTitle': 'Cycle theme (system / light / dark)',
+
+  // Search
+  'search.open': 'Global search',
+  'search.globalTitle': 'Search the capsule',
+  'search.placeholder': 'Messages and captions…',
+  'search.hint': 'Type at least 2 characters. Shortcut: Ctrl+K.',
+  'search.empty': 'No matches in messages or captions.',
+  'search.close': 'Close search',
+  'search.kindMessage': 'Message',
+  'search.kindPost': 'Caption',
 
   // Nav / titles
   'nav.dashboard': 'Overview',
@@ -73,6 +95,9 @@ export const en: Record<TranslationKey, string> = {
   'settings.telemetryValue': 'Disabled',
   'settings.internet': 'Internet access:',
   'settings.internetValue': 'Not required (the app works offline)',
+  'settings.appearanceTitle': 'Appearance',
+  'settings.pwaTitle': 'Installable app',
+  'settings.pwaBody': 'Meta Capsule can be installed as a PWA. The browser caches the interface, never your ZIP archives or IndexedDB.',
   'settings.dataTitle': 'Local Data Management',
   'settings.dataBody': 'You can delete all imported data from your browser at any time. This action is irreversible.',
   'settings.deleteData': 'Delete all local data',
@@ -122,6 +147,11 @@ export const en: Record<TranslationKey, string> = {
   'dashboard.noProfile': 'No detailed profile found in the archive.',
   'dashboard.openMessages': 'Browse my conversations',
   'dashboard.openGallery': 'Explore the photo gallery',
+  'dashboard.onThisDay': 'On this day',
+  'dashboard.onThisDayEmpty': 'Nothing on this date in the archive — try another day.',
+  'dashboard.yearsAgo': '{count} year(s) ago',
+  'dashboard.topChats': 'Busiest conversations',
+  'dashboard.topChatsEmpty': 'No conversations to rank.',
 
   // Messaging
   'messages.searchContact': 'Search a contact...',
@@ -140,6 +170,9 @@ export const en: Record<TranslationKey, string> = {
   'messages.jumpTo': 'Jump to',
   'messages.jumpToAll': 'Full conversation',
   'messages.monthEmpty': 'No messages that month',
+  'messages.exportThread': 'Export',
+  'messages.exportThreadTitle': 'Download this thread as local HTML',
+  'messages.downloadPhoto': 'Download photo',
   'dashboard.interactions': '{year} : {count} interactions',
 
   // Gallery
@@ -167,6 +200,7 @@ export const en: Record<TranslationKey, string> = {
   'gallery.sourceLabel.story': 'Story',
   'gallery.sourceLabel.message': 'Message',
   'gallery.sourceLabel.other': 'Other',
+  'gallery.downloadPhoto': 'Download',
 
   // Ads
   'ads.loading': 'Loading advertising data...',

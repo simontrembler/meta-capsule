@@ -30,7 +30,7 @@ export const SupportLinks: React.FC<SupportLinksProps> = ({ compact = false }) =
         href={BUY_ME_A_COFFEE_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className={`inline-flex items-center gap-2 bg-[#1C1B1A] text-[#F7F1EA] hover:bg-[#2F2C29] transition-colors font-semibold ${
+        className={`inline-flex items-center gap-2 bg-ink-950 text-brand-50 hover:bg-ink-800 transition-colors font-semibold ${
           compact ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-sm rounded-md'
         }`}
       >

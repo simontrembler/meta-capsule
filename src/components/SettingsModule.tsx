@@ -2,9 +2,10 @@ import React from 'react';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
+import { ThemeToggle } from './ThemeToggle';
 import { SupportLinks } from './SupportLinks';
 import { ArchivesSlots } from './ArchivesSlots';
-import { Trash2, Database, ShieldAlert, Heart, Package } from 'lucide-react';
+import { Trash2, Database, ShieldAlert, Heart, Package, Smartphone } from 'lucide-react';
 
 export const SettingsModule: React.FC = () => {
   const { resetArchive } = useArchive();
@@ -25,6 +26,20 @@ export const SettingsModule: React.FC = () => {
         <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.languageTitle')}</h3>
         <p className="text-ink-600 text-sm">{t('settings.languageBody')}</p>
         <LanguageToggle />
+      </div>
+
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
+        <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.appearanceTitle')}</h3>
+        <p className="text-ink-600 text-sm">{t('theme.body')}</p>
+        <ThemeToggle />
+      </div>
+
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
+        <div className="flex items-center gap-3 text-brand-700">
+          <Smartphone size={20} />
+          <h3 className="font-display text-lg font-semibold text-ink-950">{t('settings.pwaTitle')}</h3>
+        </div>
+        <p className="text-ink-600 text-sm">{t('settings.pwaBody')}</p>
       </div>
 
       <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">

@@ -1,18 +1,23 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { Conversation, Message, MessageAttachment } from '../db/models';
 import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
-import Dexie from 'dexie';
-import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic } from 'lucide-react';
+import { filenameFromPath, triggerDownloadFromUrl } from '../utils/download';
+import { downloadConversationHtml } from '../utils/memories';
+import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic, Download } from 'lucide-react';
 
-// Helper component to render media attachments dynamically
-const MessageMedia: React.FC<{ attachment: MessageAttachment; archiveSource: MediaArchiveSource | File | null }> = ({ attachment, archiveSource }) => {
+const MessageMedia: React.FC<{
+  attachment: MessageAttachment;
+  archiveSource: MediaArchiveSource | File | null;
+}> = ({ attachment, archiveSource }) => {
   const { t } = useLanguage();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const fileName = filenameFromPath(attachment.relativePath);
 
   useEffect(() => {
     if (!archiveSource) {
@@ -37,8 +42,7 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; archiveSource: Med
       }
     };
 
-    resolveMedia();
-
+    void resolveMedia();
     return () => {
       isMounted = false;
     };
@@ -72,9 +76,20 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; archiveSource: Med
 
   if (attachment.type === 'photo') {
     return (
-      <a href={blobUrl} target="_blank" rel="noopener noreferrer" className="block max-w-xs overflow-hidden rounded-md border border-ink-200 hover:opacity-95 transition-opacity">
-        <img src={blobUrl} alt="Attachment" className="w-full max-h-60 object-cover" />
-      </a>
+      <div className="relative max-w-xs group">
+        <a href={blobUrl} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-md border border-ink-200 hover:opacity-95 transition-opacity">
+          <img src={blobUrl} alt="" className="w-full max-h-60 object-cover" />
+        </a>
+        <button
+          type="button"
+          onClick={() => triggerDownloadFromUrl(blobUrl, fileName)}
+          className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-ink-950/80 px-2 py-1 text-[10px] font-semibold text-brand-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          title={t('messages.downloadPhoto')}
+        >
+          <Download size={12} />
+          {t('common.download')}
+        </button>
+      </div>
     );
   }
 
@@ -98,14 +113,14 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; archiveSource: Med
   }
 
   return (
-    <a
-      href={blobUrl}
-      download={attachment.relativePath.split('/').pop()}
+    <button
+      type="button"
+      onClick={() => triggerDownloadFromUrl(blobUrl, fileName)}
       className="flex items-center gap-2.5 p-3 bg-ink-50 hover:bg-ink-100 rounded-md text-xs text-ink-800 max-w-xs border border-ink-200 transition-colors"
     >
       <FileText size={16} className="text-brand-600 shrink-0" />
-      <span className="truncate font-semibold">{attachment.relativePath.split('/').pop()}</span>
-    </a>
+      <span className="truncate font-semibold">{fileName}</span>
+    </button>
   );
 };
 
@@ -162,91 +177,157 @@ function formatMonthLabel(key: string, dateLocale: string): string {
   return labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
 }
 
+const MessageRow: React.FC<{
+  msg: Message;
+  prevMsg?: Message;
+  highlightQuery: string;
+  isTarget: boolean;
+  archiveSource: MediaArchiveSource | File | null;
+  dateLocale: string;
+  t: (key: 'messages.reactedBy', vars?: Record<string, string | number>) => string;
+}> = ({ msg, prevMsg, highlightQuery, isTarget, archiveSource, dateLocale, t }) => {
+  const isMe = msg.isFromUser;
+  const showSenderName = !isMe && (!prevMsg || prevMsg.senderName !== msg.senderName);
+  const showDateDivider = !prevMsg || new Date(msg.timestamp).toDateString() !== new Date(prevMsg.timestamp).toDateString();
+
+  return (
+    <div className={`space-y-1 px-3 sm:px-6 ${isTarget ? 'bg-brand-50/80 rounded-md' : ''}`}>
+      {showDateDivider && (
+        <div className="flex justify-center my-4">
+          <span className="px-3 py-1 rounded-full bg-ink-200/60 text-ink-500 text-[10px] font-bold uppercase tracking-wider">
+            {new Date(msg.timestamp).toLocaleDateString(dateLocale, {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            })}
+          </span>
+        </div>
+      )}
+
+      {showSenderName && (
+        <div className="text-[11px] text-ink-400 font-bold ml-3.5 mt-2">{msg.senderName}</div>
+      )}
+
+      <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div
+          className={`max-w-[70%] rounded-md px-4 py-2.5 text-sm flex flex-col gap-1.5 ${
+            isMe ? 'bg-ink-950 text-brand-50' : 'bg-white text-ink-900 border border-ink-200'
+          }`}
+        >
+          {msg.content && (
+            <p className="mc-selectable leading-relaxed whitespace-pre-wrap break-words font-medium">
+              {highlightQuery ? (
+                <HighlightedText text={msg.content} query={highlightQuery} isMe={isMe} />
+              ) : (
+                msg.content
+              )}
+            </p>
+          )}
+
+          {msg.attachments && (
+            <div className="space-y-2 mt-1">
+              {msg.attachments.map((att, attIdx) => (
+                <MessageMedia key={attIdx} attachment={att} archiveSource={archiveSource} />
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-4 mt-0.5">
+            {msg.reactions && msg.reactions.length > 0 && (
+              <div className="flex gap-1">
+                {msg.reactions.map((reaction, rIdx) => (
+                  <span
+                    key={rIdx}
+                    className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-ink-50 border border-ink-200 text-xs"
+                    title={t('messages.reactedBy', { name: reaction.sender })}
+                  >
+                    {reaction.reaction}
+                  </span>
+                ))}
+              </div>
+            )}
+            <span className="text-[9px] font-semibold block ml-auto text-ink-400">
+              {new Date(msg.timestamp).toLocaleTimeString(dateLocale, {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const MessagingModule: React.FC = () => {
-  const { getArchiveSource } = useArchive();
+  const {
+    getArchiveSource,
+    requestedConversationId,
+    requestedMessageId,
+    clearRequestedConversation
+  } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [isSearchingChat, setIsSearchingChat] = useState(false);
-  const [searchResults, setSearchResults] = useState<Message[]>([]);
-  const [monthOptions, setMonthOptions] = useState<string[]>([]);
   const [monthJumpKey, setMonthJumpKey] = useState('');
-  const [monthMessages, setMonthMessages] = useState<Message[]>([]);
-  
-  // Pagination State
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [targetMessageId, setTargetMessageId] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const previousScrollHeightRef = useRef<number>(0);
+  const pendingScrollId = useRef<string | null>(null);
 
-  // 1. Load all conversations on mount
   useEffect(() => {
     const loadConversations = async () => {
-      const list = await db.conversations
-        .orderBy('lastMessageTimestamp')
-        .reverse()
-        .toArray();
+      const list = await db.conversations.orderBy('lastMessageTimestamp').reverse().toArray();
       setConversations(list);
       setFilteredConversations(list);
     };
-
-    loadConversations();
+    void loadConversations();
   }, []);
 
-  // 2. Filter conversations based on search
+  useEffect(() => {
+    if (!requestedConversationId || conversations.length === 0) return;
+    const match = conversations.find((conv) => conv.id === requestedConversationId);
+    if (match) {
+      pendingScrollId.current = requestedMessageId;
+      setTargetMessageId(requestedMessageId);
+      setActiveConv(match);
+      clearRequestedConversation();
+    }
+  }, [requestedConversationId, requestedMessageId, conversations, clearRequestedConversation]);
+
   useEffect(() => {
     if (!searchQuery.trim()) {
       setFilteredConversations(conversations);
     } else {
       const query = searchQuery.toLowerCase();
-      const filtered = conversations.filter(
-        c =>
-          c.title.toLowerCase().includes(query) ||
-          c.participants.some(p => p.toLowerCase().includes(query))
+      setFilteredConversations(
+        conversations.filter(
+          (conv) =>
+            conv.title.toLowerCase().includes(query) ||
+            conv.participants.some((participant) => participant.toLowerCase().includes(query))
+        )
       );
-      setFilteredConversations(filtered);
     }
   }, [searchQuery, conversations]);
 
-  // 3. Load messages for active conversation (Initial load)
-  const loadInitialMessages = useCallback(async (convId: string) => {
+  const loadThread = useCallback(async (convId: string) => {
     setIsLoadingMessages(true);
-    setPage(0);
-    setHasMore(true);
     setChatSearchQuery('');
     setIsSearchingChat(false);
-    setSearchResults([]);
     setMonthJumpKey('');
-    setMonthMessages([]);
-
-    const limit = 50;
     try {
-      const fetched = await db.messages
-        .where('[conversationId+timestamp]')
-        .between([convId, Dexie.minKey], [convId, Dexie.maxKey])
-        .reverse()
-        .limit(limit)
-        .toArray();
-
-      const chronological = [...fetched].reverse();
-      setMessages(chronological);
-      setPage(1);
-      setHasMore(fetched.length === limit);
-      
-      // Scroll to bottom after state update
-      setTimeout(() => {
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-      }, 50);
+      const fetched = await db.messages.where('conversationId').equals(convId).sortBy('timestamp');
+      setAllMessages(fetched);
     } catch (err) {
       console.error('Error loading messages:', err);
+      setAllMessages([]);
     } finally {
       setIsLoadingMessages(false);
     }
@@ -254,188 +335,90 @@ export const MessagingModule: React.FC = () => {
 
   useEffect(() => {
     if (activeConv) {
-      loadInitialMessages(activeConv.id);
+      void loadThread(activeConv.id);
     } else {
-      setMessages([]);
-      setMonthOptions([]);
+      setAllMessages([]);
     }
-  }, [activeConv, loadInitialMessages]);
+  }, [activeConv, loadThread]);
 
-  useEffect(() => {
-    if (!activeConv) return;
-    let cancelled = false;
-
-    const loadMonths = async () => {
-      const first = await db.messages
-        .where('[conversationId+timestamp]')
-        .between([activeConv.id, Dexie.minKey], [activeConv.id, Dexie.maxKey])
-        .first();
-      const last = await db.messages
-        .where('[conversationId+timestamp]')
-        .between([activeConv.id, Dexie.minKey], [activeConv.id, Dexie.maxKey])
-        .last();
-      if (!first || !last || cancelled) {
-        if (!cancelled) setMonthOptions([]);
-        return;
-      }
-
-      const months: string[] = [];
-      const cursor = new Date(first.timestamp);
-      cursor.setDate(1);
-      cursor.setHours(0, 0, 0, 0);
-      const end = new Date(last.timestamp);
-      while (cursor <= end) {
-        months.push(monthKeyFromTimestamp(cursor.getTime()));
-        cursor.setMonth(cursor.getMonth() + 1);
-      }
-      if (!cancelled) setMonthOptions(months);
-    };
-
-    void loadMonths();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeConv]);
-
-  // 4. Load more messages on scroll up (Infinite Scroll)
-  const loadMoreMessages = async () => {
-    if (!activeConv || isLoadingMessages || !hasMore || isSearchingChat || monthJumpKey) return;
-
-    setIsLoadingMessages(true);
-    const limit = 50;
-    const offset = page * limit;
-
-    if (chatContainerRef.current) {
-      previousScrollHeightRef.current = chatContainerRef.current.scrollHeight;
+  const monthOptions = useMemo(() => {
+    const keys = new Set<string>();
+    for (const msg of allMessages) {
+      if (msg.timestamp) keys.add(monthKeyFromTimestamp(msg.timestamp));
     }
+    return Array.from(keys);
+  }, [allMessages]);
 
-    try {
-      const fetched = await db.messages
-        .where('[conversationId+timestamp]')
-        .between([activeConv.id, Dexie.minKey], [activeConv.id, Dexie.maxKey])
-        .reverse()
-        .offset(offset)
-        .limit(limit)
-        .toArray();
+  const displayedMessages = useMemo(() => {
+    if (isSearchingChat && chatSearchQuery.trim()) {
+      const query = chatSearchQuery.toLowerCase();
+      return allMessages.filter((msg) => msg.content.toLowerCase().includes(query));
+    }
+    if (monthJumpKey) {
+      return allMessages.filter((msg) => monthKeyFromTimestamp(msg.timestamp) === monthJumpKey);
+    }
+    return allMessages;
+  }, [allMessages, chatSearchQuery, isSearchingChat, monthJumpKey]);
 
-      if (fetched.length > 0) {
-        const chronological = [...fetched].reverse();
-        setMessages(prev => [...chronological, ...prev]);
-        setPage(prev => prev + 1);
-        setHasMore(fetched.length === limit);
+  const virtualizer = useVirtualizer({
+    count: displayedMessages.length,
+    getScrollElement: () => chatContainerRef.current,
+    estimateSize: () => 96,
+    overscan: 14,
+    getItemKey: (index) => displayedMessages[index]?.id ?? index
+  });
 
-        // Maintain scroll position after prepending items
-        setTimeout(() => {
-          if (chatContainerRef.current) {
-            const container = chatContainerRef.current;
-            container.scrollTop = container.scrollHeight - previousScrollHeightRef.current;
-          }
-        }, 10);
+  useLayoutEffect(() => {
+    if (isLoadingMessages || displayedMessages.length === 0) return;
+
+    const targetId = pendingScrollId.current;
+    if (targetId) {
+      const index = displayedMessages.findIndex((msg) => msg.id === targetId);
+      if (index >= 0) {
+        virtualizer.scrollToIndex(index, { align: 'center' });
       } else {
-        setHasMore(false);
+        virtualizer.scrollToIndex(displayedMessages.length - 1, { align: 'end' });
       }
-    } catch (err) {
-      console.error('Error loading more messages:', err);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  };
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const container = e.currentTarget;
-    if (container.scrollTop === 0 && hasMore && !isLoadingMessages && !isSearchingChat && !monthJumpKey) {
-      loadMoreMessages();
-    }
-  };
-
-  // 5. Search within active chat
-  const handleChatSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeConv || !chatSearchQuery.trim()) {
-      setIsSearchingChat(false);
-      setSearchResults([]);
+      pendingScrollId.current = null;
       return;
     }
 
-    setIsSearchingChat(true);
-    setMonthJumpKey('');
-    setMonthMessages([]);
-    setIsLoadingMessages(true);
-
-    try {
-      const results = await db.messages
-        .where('conversationId')
-        .equals(activeConv.id)
-        .filter(msg => msg.content.toLowerCase().includes(chatSearchQuery.toLowerCase()))
-        .toArray();
-
-      // Sort chronologically
-      results.sort((a, b) => a.timestamp - b.timestamp);
-      setSearchResults(results);
-    } catch (err) {
-      console.error('Error searching chat:', err);
-    } finally {
-      setIsLoadingMessages(false);
+    if (!isSearchingChat && !monthJumpKey) {
+      virtualizer.scrollToIndex(displayedMessages.length - 1, { align: 'end' });
+    } else {
+      virtualizer.scrollToOffset(0);
     }
+  }, [displayedMessages.length, isLoadingMessages, isSearchingChat, monthJumpKey, activeConv?.id]);
+
+  const handleChatSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!chatSearchQuery.trim()) {
+      setIsSearchingChat(false);
+      return;
+    }
+    setMonthJumpKey('');
+    setIsSearchingChat(true);
   };
 
   const clearChatSearch = () => {
     setChatSearchQuery('');
     setIsSearchingChat(false);
-    setSearchResults([]);
-    if (activeConv && !monthJumpKey) {
-      loadInitialMessages(activeConv.id);
-    }
   };
 
-  const jumpToMonth = async (key: string) => {
-    if (!activeConv) return;
-    if (!key) {
-      setMonthJumpKey('');
-      setMonthMessages([]);
-      await loadInitialMessages(activeConv.id);
-      return;
-    }
-
-    const [year, month] = key.split('-').map(Number);
-    const start = new Date(year, month - 1, 1).getTime();
-    const end = new Date(year, month, 1).getTime();
-
+  const jumpToMonth = (key: string) => {
     setIsSearchingChat(false);
-    setSearchResults([]);
-    setIsLoadingMessages(true);
-    try {
-      const batch = await db.messages
-        .where('[conversationId+timestamp]')
-        .between([activeConv.id, start], [activeConv.id, end], true, false)
-        .toArray();
-      setMonthJumpKey(key);
-      setMonthMessages(batch);
-      setTimeout(() => {
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTop = 0;
-        }
-      }, 30);
-    } catch (err) {
-      console.error('Error jumping to month:', err);
-    } finally {
-      setIsLoadingMessages(false);
-    }
+    setChatSearchQuery('');
+    setMonthJumpKey(key);
   };
 
-  const displayedMessages = monthJumpKey
-    ? monthMessages
-    : isSearchingChat
-      ? searchResults
-      : messages;
-
+  const exportActiveThread = () => {
+    if (!activeConv) return;
+    downloadConversationHtml(activeConv, allMessages);
+  };
 
   return (
     <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-ink-50">
-      
-      {/* Sidebar: Conversations List */}
       <div className={`w-full md:w-80 border-r border-ink-200 bg-white flex flex-col h-full shrink-0 ${activeConv ? 'hidden md:flex' : 'flex'}`}>
-        {/* Search Bar */}
         <div className="p-4 border-b border-ink-100">
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" size={16} />
@@ -443,13 +426,12 @@ export const MessagingModule: React.FC = () => {
               type="text"
               placeholder={t('messages.searchContact')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-md bg-ink-50 border border-ink-200 hover:border-ink-200 focus:border-brand-500 focus:bg-white text-sm font-semibold outline-none transition-all"
             />
           </div>
         </div>
 
-        {/* Conversations List */}
         <div className="flex-1 overflow-y-auto divide-y divide-ink-100">
           {filteredConversations.length > 0 ? (
             filteredConversations.map((conv) => {
@@ -462,7 +444,6 @@ export const MessagingModule: React.FC = () => {
                     isActive ? 'bg-brand-50' : 'hover:bg-ink-50'
                   }`}
                 >
-                  {/* Platform Icon & Avatar */}
                   <div className="relative shrink-0">
                     <div className="w-11 h-11 rounded-full bg-ink-100 text-ink-700 flex items-center justify-center font-semibold text-sm">
                       {conv.title.charAt(0)}
@@ -477,8 +458,6 @@ export const MessagingModule: React.FC = () => {
                       {conv.platform.charAt(0)}
                     </span>
                   </div>
-
-                  {/* Conversation Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <h4 className="font-bold text-ink-900 text-sm truncate">{conv.title}</h4>
@@ -508,11 +487,9 @@ export const MessagingModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Chat Window */}
       <div className={`flex-1 flex flex-col h-full bg-ink-50 ${!activeConv ? 'hidden md:flex items-center justify-center' : 'flex'}`}>
         {activeConv ? (
           <>
-            {/* Chat Header */}
             <div className="min-h-14 md:h-16 bg-white border-b border-ink-200 px-3 sm:px-6 py-2 flex items-center justify-between shrink-0 gap-2 flex-wrap">
               <div className="flex items-center gap-3 min-w-0">
                 <button
@@ -528,19 +505,26 @@ export const MessagingModule: React.FC = () => {
                   <h3 className="font-display font-semibold text-ink-950 text-sm md:text-base truncate leading-none mb-1">
                     {activeConv.title}
                   </h3>
-                  <p className="text-xs text-ink-400 truncate font-semibold">
-                    {activeConv.participants.join(', ')}
-                  </p>
+                  <p className="text-xs text-ink-400 truncate font-semibold">{activeConv.participants.join(', ')}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap justify-end">
+                <button
+                  type="button"
+                  onClick={exportActiveThread}
+                  title={t('messages.exportThreadTitle')}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-ink-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-50"
+                >
+                  <Download size={14} />
+                  <span className="hidden sm:inline">{t('messages.exportThread')}</span>
+                </button>
                 {monthOptions.length > 0 && (
                   <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
                     <span className="hidden sm:inline">{t('messages.jumpTo')}</span>
                     <select
                       value={monthJumpKey}
-                      onChange={(e) => void jumpToMonth(e.target.value)}
+                      onChange={(event) => jumpToMonth(event.target.value)}
                       className="max-w-[9.5rem] rounded-md border border-ink-200 bg-ink-50 px-2 py-1.5 text-xs font-semibold text-ink-800 outline-none focus:border-brand-500"
                     >
                       <option value="">{t('messages.jumpToAll')}</option>
@@ -558,7 +542,7 @@ export const MessagingModule: React.FC = () => {
                       type="text"
                       placeholder={t('messages.searchInChat')}
                       value={chatSearchQuery}
-                      onChange={(e) => setChatSearchQuery(e.target.value)}
+                      onChange={(event) => setChatSearchQuery(event.target.value)}
                       className="pl-3 pr-8 py-1.5 rounded-md bg-ink-50 border border-ink-200 hover:border-ink-200 focus:border-brand-500 focus:bg-white text-xs font-semibold outline-none transition-all w-36 sm:w-48"
                     />
                     {isSearchingChat && (
@@ -573,7 +557,7 @@ export const MessagingModule: React.FC = () => {
                   </div>
                   <button
                     type="submit"
-                    className="px-3 py-1.5 rounded-md bg-[#1C1B1A] hover:bg-[#2F2C29] text-[#F7F1EA] text-xs font-semibold transition-colors"
+                    className="px-3 py-1.5 rounded-md bg-ink-950 hover:bg-ink-800 text-brand-50 text-xs font-semibold transition-colors"
                   >
                     {t('messages.search')}
                   </button>
@@ -581,23 +565,16 @@ export const MessagingModule: React.FC = () => {
               </div>
             </div>
 
-            {/* Messages Container */}
-            <div
-              ref={chatContainerRef}
-              onScroll={handleScroll}
-              className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4"
-            >
-              {/* Loader for infinite scroll */}
-              {isLoadingMessages && !isSearchingChat && (
-                <div className="flex justify-center py-2">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto">
+              {isLoadingMessages && (
+                <div className="flex justify-center py-6">
                   <div className="w-5 h-5 border-2 border-ink-300 border-t-brand-600 rounded-full animate-spin"></div>
                 </div>
               )}
 
-              {/* Search Results Header */}
               {isSearchingChat && (
-                <div className="sticky top-0 z-10 bg-brand-50 border border-brand-200 rounded-md p-3 text-center text-xs text-brand-800 font-semibold flex items-center justify-between">
-                  <span>{t('messages.searchResults', { count: searchResults.length, query: chatSearchQuery })}</span>
+                <div className="sticky top-0 z-10 mx-3 sm:mx-6 mt-3 bg-brand-50 border border-brand-200 rounded-md p-3 text-center text-xs text-brand-800 font-semibold flex items-center justify-between">
+                  <span>{t('messages.searchResults', { count: displayedMessages.length, query: chatSearchQuery })}</span>
                   <button onClick={clearChatSearch} className="text-brand-700 hover:text-brand-900 underline">
                     {t('messages.backToChat')}
                   </button>
@@ -605,107 +582,46 @@ export const MessagingModule: React.FC = () => {
               )}
 
               {monthJumpKey && (
-                <div className="sticky top-0 z-10 bg-ink-100 border border-ink-200 rounded-md p-3 text-center text-xs text-ink-700 font-semibold flex items-center justify-between">
+                <div className="sticky top-0 z-10 mx-3 sm:mx-6 mt-3 bg-ink-100 border border-ink-200 rounded-md p-3 text-center text-xs text-ink-700 font-semibold flex items-center justify-between">
                   <span>{formatMonthLabel(monthJumpKey, dateLocale)}</span>
-                  <button onClick={() => void jumpToMonth('')} className="text-ink-600 hover:text-ink-900 underline">
+                  <button onClick={() => jumpToMonth('')} className="text-ink-600 hover:text-ink-900 underline">
                     {t('messages.backToChat')}
                   </button>
                 </div>
               )}
 
-              {monthJumpKey && monthMessages.length === 0 && !isLoadingMessages && (
+              {monthJumpKey && displayedMessages.length === 0 && !isLoadingMessages && (
                 <p className="text-center text-sm text-ink-400 py-8">{t('messages.monthEmpty')}</p>
               )}
 
-              {/* Messages List */}
-              {displayedMessages.map((msg, idx, arr) => {
-                const isMe = msg.isFromUser;
-                const prevMsg = arr[idx - 1];
-                const showSenderName = !isMe && (!prevMsg || prevMsg.senderName !== msg.senderName);
-                const showDateDivider = !prevMsg || new Date(msg.timestamp).toDateString() !== new Date(prevMsg.timestamp).toDateString();
-
-                return (
-                  <div key={msg.id} className="space-y-1">
-                    {/* Date Divider */}
-                    {showDateDivider && (
-                      <div className="flex justify-center my-4">
-                        <span className="px-3 py-1 rounded-full bg-ink-200/60 text-ink-500 text-[10px] font-bold uppercase tracking-wider">
-                          {new Date(msg.timestamp).toLocaleDateString(dateLocale, {
-                            weekday: 'long',
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Sender Name */}
-                    {showSenderName && (
-                      <div className="text-[11px] text-ink-400 font-bold ml-3.5 mt-2">
-                        {msg.senderName}
-                      </div>
-                    )}
-
-                    {/* Message Bubble Row */}
-                    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[70%] rounded-md px-4 py-2.5 text-sm flex flex-col gap-1.5 ${
-                        isMe
-                          ? 'bg-[#1C1B1A] text-[#F7F1EA]'
-                          : 'bg-white text-ink-900 border border-ink-200'
-                      }`}>
-                        {/* Text Content */}
-                        {msg.content && (
-                          <p className="mc-selectable leading-relaxed whitespace-pre-wrap break-words font-medium">
-                            {isSearchingChat ? (
-                              <HighlightedText text={msg.content} query={chatSearchQuery} isMe={isMe} />
-                            ) : (
-                              msg.content
-                            )}
-                          </p>
-                        )}
-
-                        {/* Attachments */}
-                        {msg.attachments && (
-                          <div className="space-y-2 mt-1">
-                            {msg.attachments.map((att, attIdx) => (
-                              <MessageMedia
-                                key={attIdx}
-                                attachment={att}
-                                archiveSource={getArchiveSource(msg.platform)}
-                              />
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Timestamp & Reactions */}
-                        <div className="flex items-center justify-between gap-4 mt-0.5">
-                          {/* Reactions */}
-                          {msg.reactions && msg.reactions.length > 0 && (
-                            <div className="flex gap-1">
-                              {msg.reactions.map((r, rIdx) => (
-                                <span
-                                  key={rIdx}
-                                  className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-ink-50 border border-ink-200 text-xs "
-                                  title={t('messages.reactedBy', { name: r.sender })}
-                                >
-                                  {r.reaction}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <span className={`text-[9px] font-semibold block ml-auto ${isMe ? 'text-ink-400' : 'text-ink-400'}`}>
-                            {new Date(msg.timestamp).toLocaleTimeString(dateLocale, {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                      </div>
+              <div
+                className="relative w-full py-3"
+                style={{ height: `${virtualizer.getTotalSize()}px` }}
+              >
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                  const msg = displayedMessages[virtualRow.index];
+                  if (!msg) return null;
+                  return (
+                    <div
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={virtualizer.measureElement}
+                      className="absolute top-0 left-0 w-full pb-4"
+                      style={{ transform: `translateY(${virtualRow.start}px)` }}
+                    >
+                      <MessageRow
+                        msg={msg}
+                        prevMsg={displayedMessages[virtualRow.index - 1]}
+                        highlightQuery={isSearchingChat ? chatSearchQuery : ''}
+                        isTarget={targetMessageId === msg.id}
+                        archiveSource={getArchiveSource(msg.platform)}
+                        dateLocale={dateLocale}
+                        t={t}
+                      />
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </>
         ) : (
@@ -714,9 +630,7 @@ export const MessagingModule: React.FC = () => {
               <MessageSquare size={28} />
             </div>
             <h3 className="font-display text-lg font-semibold text-ink-950 mb-1">{t('messages.emptyTitle')}</h3>
-            <p className="text-ink-400 text-sm max-w-sm mx-auto leading-relaxed">
-              {t('messages.emptyBody')}
-            </p>
+            <p className="text-ink-400 text-sm max-w-sm mx-auto leading-relaxed">{t('messages.emptyBody')}</p>
           </div>
         )}
       </div>

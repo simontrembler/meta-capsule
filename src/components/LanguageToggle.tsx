@@ -16,7 +16,7 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
           type="button"
           onClick={() => setLocale('fr')}
           className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-            locale === 'fr' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950 hover:bg-ink-100'
+            locale === 'fr' ? 'bg-ink-950 text-brand-50' : 'text-ink-600 hover:text-ink-950 hover:bg-ink-100'
           }`}
         >
           FR
@@ -25,7 +25,7 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
           type="button"
           onClick={() => setLocale('en')}
           className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
-            locale === 'en' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950 hover:bg-ink-100'
+            locale === 'en' ? 'bg-ink-950 text-brand-50' : 'text-ink-600 hover:text-ink-950 hover:bg-ink-100'
           }`}
         >
           EN
@@ -45,7 +45,7 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
           type="button"
           onClick={() => setLocale('fr')}
           className={`px-4 py-2 text-xs font-semibold transition-colors ${
-            locale === 'fr' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950'
+            locale === 'fr' ? 'bg-ink-950 text-brand-50' : 'text-ink-600 hover:text-ink-950'
           }`}
         >
           {t('lang.fr')}
@@ -54,7 +54,7 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ compact = false 
           type="button"
           onClick={() => setLocale('en')}
           className={`px-4 py-2 text-xs font-semibold transition-colors ${
-            locale === 'en' ? 'bg-[#1C1B1A] text-[#F7F1EA]' : 'text-ink-600 hover:text-ink-950'
+            locale === 'en' ? 'bg-ink-950 text-brand-50' : 'text-ink-600 hover:text-ink-950'
           }`}
         >
           {t('lang.en')}

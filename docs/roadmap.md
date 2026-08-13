@@ -10,24 +10,20 @@ Produit : SPA **client-only**. ZIP / dossier restent dans le navigateur. Pas de 
 - Recherche **dans** un thread (mobile inclus) + surlignage
 - Saut **année / mois** dans une conversation
 
-## P1 — souvenirs (prochaine branche)
+## Fait (P1) — branche `feature/p1-capsule-memories`
 
-Toujours 100 % local, fichiers générés dans le navigateur.
+- **Ce jour-là** sur la synthèse (messages de cette date, années passées)
+- Top conversations (volume) → ouvre le fil
+- Export HTML local d’un fil (téléchargement navigateur, pas d’upload)
+- Timeline annuelle déjà sur la synthèse (volume cumulé FB+IG)
 
-| Feature | Pourquoi |
-|---------|----------|
-| **Ce jour-là** | Photos + messages du même jour/mois, années passées |
-| Timeline unique FB+IG | Un axe temps, badges plateforme |
-| Top conversations | Classement par volume / années actives |
-| Export local d’un souvenir | Un thread ou un mois → HTML/ZIP téléchargé, jamais uploadé |
+## Fait (P2) — branche `feature/p2-comfort`
 
-## P2 — confort
-
-- PWA (installable, cache app)
-- Mode sombre
+- PWA (installable, cache de l’app seulement — pas des archives)
+- Mode sombre (clair / sombre / système)
 - Virtualisation des threads longs
-- Recherche globale (messages + légendes) si la recherche in-thread tient la route
-- Extraire 1 photo / 1 conv depuis l’archive (download)
+- Recherche globale (messages + légendes)
+- Télécharger 1 photo (galerie / fil) et 1 conversation (HTML local)
 
 ## Plus tard, ou jamais
 
