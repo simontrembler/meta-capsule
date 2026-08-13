@@ -46,6 +46,11 @@ export class MetaArchiveDatabase extends Dexie {
     this.version(3).stores({
       media: 'id, platform, relativePath, type, source, timestamp, [source+timestamp]'
     });
+
+    // Optional GPS from export EXIF (latitude/longitude on MediaAttachment; same indexes)
+    this.version(4).stores({
+      media: 'id, platform, relativePath, type, source, timestamp, [source+timestamp]'
+    });
   }
 
   /**

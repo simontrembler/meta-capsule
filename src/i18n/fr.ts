@@ -84,6 +84,7 @@ export const fr = {
   'import.inProgress': 'Ouverture de la capsule…',
   'import.dontClose': "Ne fermez pas cet onglet pendant le traitement. Les grosses archives peuvent prendre quelques minutes.",
   'import.privacyBadge': '100 % local · aucun upload',
+  'import.facebookMultiZip': 'Facebook en plusieurs ZIP ? Importez le dossier dézippé fusionné (une seule partie médias n’a souvent aucun JSON).',
 
   // Settings
   'settings.privacyTitle': 'Sécurité et Confidentialité',
@@ -107,7 +108,7 @@ export const fr = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre.',
+  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre. Pour Facebook multi-ZIP : préférez le dossier fusionné.',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',
@@ -215,7 +216,7 @@ export const fr = {
   'ads.interestsFilter': "Filtrer les centres d'intérêt...",
   'ads.interestsEmpty': "Aucun centre d'intérêt trouvé",
   'ads.advertisersTitle': 'Annonceurs ciblant vos coordonnées ({count})',
-  'ads.advertisersSubtitle': 'Entreprises ayant importé vos coordonnées (e-mail, téléphone) pour vous cibler',
+  'ads.advertisersSubtitle': 'Entreprises qui utilisent votre activité ou vos coordonnées pour vous cibler',
   'ads.advertisersFilter': 'Filtrer les annonceurs...',
   'ads.advertisersEmpty': 'Aucun annonceur trouvé',
   'ads.directTargeting': 'Ciblage direct'

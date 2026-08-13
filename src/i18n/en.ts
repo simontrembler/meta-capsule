@@ -83,6 +83,7 @@ export const en: Record<TranslationKey, string> = {
   'import.inProgress': 'Opening capsule…',
   'import.dontClose': 'Please keep this tab open during processing. Large archives may take a few minutes.',
   'import.privacyBadge': '100% local · no upload',
+  'import.facebookMultiZip': 'Facebook split across ZIPs? Import the merged unzipped folder (a media-only part often has no JSON).',
 
   // Settings
   'settings.privacyTitle': 'Security & Privacy',
@@ -106,7 +107,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact.',
+  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact. For multi-ZIP Facebook: prefer the merged folder.',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',
@@ -214,7 +215,7 @@ export const en: Record<TranslationKey, string> = {
   'ads.interestsFilter': 'Filter interests...',
   'ads.interestsEmpty': 'No interests found',
   'ads.advertisersTitle': 'Advertisers targeting your details ({count})',
-  'ads.advertisersSubtitle': 'Companies that uploaded your contact details (email, phone) to target you',
+  'ads.advertisersSubtitle': 'Companies that use your activity or contact details to target you',
   'ads.advertisersFilter': 'Filter advertisers...',
   'ads.advertisersEmpty': 'No advertisers found',
   'ads.directTargeting': 'Direct targeting'

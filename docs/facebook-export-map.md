@@ -152,12 +152,12 @@ Clés fréquentes : `sender_name`, `timestamp_ms`, `content`, `reactions`, `phot
 |---------------|---------------------|
 | `profile_information.json` → `profile_v2` | Oui → `profiles` |
 | `messages/inbox/` + `message_requests/` | Oui → `conversations`, `messages` |
-| `messages/archived_threads\|filtered_threads\|e2ee_cutover/` | **Non** |
+| `messages/archived_threads\|filtered_threads\|e2ee_cutover/` | Oui (même parseur que inbox) |
 | `posts/your_posts*` (y compris `your_posts__check_ins__…`) | Oui (`includes('posts/your_posts')`) → `posts` |
-| `posts/album/*`, uncategorized photos/videos | **Non** (binaires indexables via pass médias si présents) |
+| `posts/album/*`, uncategorized photos/videos | Oui → `posts` (+ GPS EXIF JSON → `media.latitude/longitude`) |
 | `ads_interests.json` (`topics_v2`) | Oui → `adTargeting.interests` |
-| `advertisers_who_uploaded*` | Ancien nom — **absent** de cet export |
-| `advertisers_using_your_activity_or_information.json` | **Non** (schéma `label_values` / `vec`) |
+| `advertisers_who_uploaded*` | Ancien nom — encore matché si présent |
+| `advertisers_using_your_activity_or_information.json` | Oui → `adTargeting.advertisers` |
 
 Ingest : [`src/workers/ingestion.worker.ts`](../src/workers/ingestion.worker.ts).  
 Cartographie Instagram : [`instagram-export-map.md`](instagram-export-map.md).

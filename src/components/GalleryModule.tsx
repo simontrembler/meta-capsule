@@ -59,11 +59,24 @@ function getSourceLabel(
 
 function inferSourceFromPath(relativePath: string): MediaSource {
   const path = relativePath.replace(/\\/g, '/').toLowerCase();
-  if (path.includes('/messages/') || path.includes('messages/inbox') || path.includes('message_requests')) {
+  if (
+    path.includes('/messages/') ||
+    path.includes('messages/inbox') ||
+    path.includes('message_requests') ||
+    path.includes('archived_threads') ||
+    path.includes('filtered_threads') ||
+    path.includes('e2ee_cutover')
+  ) {
     return 'message';
   }
   if (path.includes('/stories/') || path.includes('/media/stories')) return 'story';
-  if (path.includes('/media/posts') || path.includes('/posts/')) return 'post';
+  if (
+    path.includes('/media/posts') ||
+    path.includes('/posts/') ||
+    path.includes('uncategorized')
+  ) {
+    return 'post';
+  }
   return 'other';
 }
 
