@@ -4,22 +4,28 @@ import { useLanguage } from '../context/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
 import { SupportLinks } from './SupportLinks';
-import { ArchivesSlots } from './ArchivesSlots';
-import { Trash2, Database, ShieldAlert, Heart, Package, Smartphone } from 'lucide-react';
+import { Trash2, Database, ShieldAlert, Heart, Smartphone, Award, ArrowRight } from 'lucide-react';
 
 export const SettingsModule: React.FC = () => {
-  const { resetArchive } = useArchive();
+  const { resetArchive, setActiveTab } = useArchive();
   const { t } = useLanguage();
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-4">
-      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
+    <div className="p-4 sm:p-6 md:p-8 max-w-4xl space-y-4 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px)+1rem)] md:pb-8">
+      <div className="bg-white border border-ink-200 rounded-md p-6 space-y-3 md:hidden">
         <div className="flex items-center gap-3 text-brand-700">
-          <Package size={20} />
-          <h3 className="font-display text-lg font-semibold text-ink-950">{t('archives.title')}</h3>
+          <Award size={20} />
+          <h3 className="font-display text-lg font-semibold text-ink-950">{t('nav.ads')}</h3>
         </div>
-        <p className="text-ink-600 text-sm">{t('archives.body')}</p>
-        <ArchivesSlots variant="settings" />
+        <p className="text-ink-600 text-sm">{t('settings.openAdsBody')}</p>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ads')}
+          className="w-full flex items-center justify-between px-4 py-2.5 border border-ink-200 text-ink-800 text-sm font-semibold hover:border-brand-500 hover:bg-brand-50 transition-colors rounded-md"
+        >
+          <span>{t('settings.openAds')}</span>
+          <ArrowRight size={16} className="text-brand-600" />
+        </button>
       </div>
 
       <div className="bg-white border border-ink-200 rounded-md p-6 space-y-4">
@@ -74,6 +80,7 @@ export const SettingsModule: React.FC = () => {
 
         <div className="pt-2">
           <button
+            type="button"
             onClick={resetArchive}
             className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-semibold text-sm transition-colors"
           >

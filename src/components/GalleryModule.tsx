@@ -436,7 +436,7 @@ export const GalleryModule: React.FC = () => {
   );
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem-3.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
       <div className="bg-white p-3 sm:p-4 border border-ink-200 rounded-md space-y-3 shrink-0">
         <div className="flex items-center gap-2 text-ink-800">
           <Filter size={18} className="text-brand-600 shrink-0" />

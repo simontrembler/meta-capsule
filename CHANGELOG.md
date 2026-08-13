@@ -6,6 +6,15 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+### Ajouté
+- Navigation mobile en barre du bas (Synthèse, Messagerie, Galerie, Archives, Paramètres)
+- Onglet Archives dédié (ajouter / remplacer / fermer)
+- Liens GitHub et Buy Me a Coffee dans le header de l’app
+
+### Changé
+- Plus de menu hamburger mobile ; la sidebar reste sur desktop (y compris Publicité)
+- Publicité accessible sur mobile via un lien dans Paramètres
+
 ## [1.1.0] - 2026-08-13
 
 ### Ajouté

@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useArchive, type ArchivePlatform } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
-import { useShell } from '../context/ShellContext';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
 import { GlobalSearch } from './GlobalSearch';
 import { SupportLinks } from './SupportLinks';
-import { ShieldCheck, AlertTriangle, FileCheck, Upload, KeyRound, Menu, Search } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, FileCheck, Upload, KeyRound, Search } from 'lucide-react';
 import type { TranslationKey } from '../i18n';
 
 function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
@@ -88,7 +87,6 @@ function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
 export const Header: React.FC = () => {
   const { activeTab, zipAccessState, stats, hasMediaAccess } = useArchive();
   const { t } = useLanguage();
-  const { toggleNav } = useShell();
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -106,6 +104,7 @@ export const Header: React.FC = () => {
     dashboard: 'title.dashboard',
     messages: 'title.messages',
     gallery: 'title.gallery',
+    archives: 'title.archives',
     ads: 'title.ads',
     settings: 'title.settings'
   };
@@ -117,14 +116,6 @@ export const Header: React.FC = () => {
   return (
     <header className="min-h-14 h-auto md:h-16 bg-white border-b border-ink-200 px-3 sm:px-4 md:px-6 py-2 md:py-0 flex items-center justify-between gap-2 flex-wrap sticky top-0 z-10 shrink-0">
       <div className="flex items-center gap-2 min-w-0">
-        <button
-          type="button"
-          onClick={toggleNav}
-          className="md:hidden p-2 -ml-1 rounded-md text-ink-700 hover:bg-ink-100 shrink-0"
-          aria-label={t('nav.openMenu')}
-        >
-          <Menu size={20} />
-        </button>
         <h2 className="font-display text-lg md:text-xl font-semibold text-ink-950 tracking-[-0.02em] truncate">
           {t(titleKeys[activeTab] || 'nav.dashboard')}
         </h2>
