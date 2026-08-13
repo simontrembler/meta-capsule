@@ -6,6 +6,16 @@ dist/
 dist-ssr/
 .vite/
 
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# Personal Meta archives — never commit an export
+*.zip
+facebook-*/
+instagram-*/
+
 # Local / editor
 .DS_Store
 *.local

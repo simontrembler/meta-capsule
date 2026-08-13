@@ -28,7 +28,7 @@ Produit : SPA **client-only**. ZIP / dossier restent dans le navigateur. Pas de 
 ## Ensuite (docs / polish)
 
 - Démo publique (hébergement static + archive **fictive** one-click) + lien dans le README
-- Captures d’écran dans le README — **fait** (`docs/screenshots/`) ; recadrer si e-mail / téléphone / contacts réels ne doivent pas être publics
+- Captures d’écran dans le README — **fait** (`docs/screenshots/`) ; zones perso pixelisées avant publication
 
 ## Plus tard, ou jamais
 
