@@ -26,15 +26,28 @@ function getMediaType(filename: string): 'photo' | 'video' | 'audio' | 'file' {
   return 'file';
 }
 
+const MESSAGE_THREAD_PATHS = [
+  'messages/inbox/',
+  'messages/message_requests/',
+  'messages/archived_threads/',
+  'messages/filtered_threads/',
+  'messages/e2ee_cutover/'
+] as const;
+
+function isMessageThreadJson(path: string): boolean {
+  const lower = path.toLowerCase();
+  return MESSAGE_THREAD_PATHS.some((p) => lower.includes(p)) && lower.includes('message_');
+}
+
 /** Infer origin from Meta export folder layout (posts / stories / DMs). */
 function inferMediaSource(filename: string): MediaSource {
   const path = normalizePath(filename).toLowerCase();
 
   if (
     path.includes('/messages/') ||
-    path.includes('messages/inbox') ||
-    path.includes('messages/message_requests') ||
-    path.includes('/inbox/') && (path.includes('/photos/') || path.includes('/videos/') || path.includes('/audio/'))
+    MESSAGE_THREAD_PATHS.some((p) => path.includes(p)) ||
+    (path.includes('/inbox/') &&
+      (path.includes('/photos/') || path.includes('/videos/') || path.includes('/audio/')))
   ) {
     return 'message';
   }
@@ -46,12 +59,83 @@ function inferMediaSource(filename: string): MediaSource {
   if (
     path.includes('/media/posts') ||
     path.includes('/posts/') ||
-    path.includes('your_instagram_activity/posts')
+    path.includes('your_instagram_activity/posts') ||
+    path.includes('your_uncategorized_photos') ||
+    path.includes('your_videos')
   ) {
     return 'post';
   }
 
   return 'other';
+}
+
+/** GPS from Meta JSON media_metadata (not binary EXIF). */
+function extractGpsFromMedia(mediaObj: unknown): { latitude: number; longitude: number } | null {
+  if (!mediaObj || typeof mediaObj !== 'object') return null;
+  const meta = (mediaObj as { media_metadata?: Record<string, unknown> }).media_metadata;
+  if (!meta || typeof meta !== 'object') return null;
+
+  const buckets = [
+    meta.photo_metadata,
+    meta.video_metadata,
+    meta
+  ];
+
+  for (const bucket of buckets) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    const exif = (bucket as { exif_data?: unknown }).exif_data;
+    const list = Array.isArray(exif) ? exif : exif ? [exif] : [];
+    for (const item of list) {
+      if (!item || typeof item !== 'object') continue;
+      const lat = (item as { latitude?: unknown; Latitude?: unknown }).latitude
+        ?? (item as { Latitude?: unknown }).Latitude;
+      const lng = (item as { longitude?: unknown; Longitude?: unknown }).longitude
+        ?? (item as { Longitude?: unknown }).Longitude;
+      if (
+        typeof lat === 'number' &&
+        typeof lng === 'number' &&
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        !(lat === 0 && lng === 0)
+      ) {
+        return { latitude: lat, longitude: lng };
+      }
+    }
+  }
+  return null;
+}
+
+function labelValueMap(item: { label_values?: Array<{ label?: string; value?: string; title?: string }> }): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const lv of item.label_values || []) {
+    if (!lv?.label) continue;
+    const v = lv.value || lv.title;
+    if (typeof v === 'string' && v.trim()) out[lv.label] = v.trim();
+  }
+  return out;
+}
+
+/** Facebook ZIP with only media (no profile/messages/posts JSON) — multi-part export trap. */
+function facebookZipLacksCoreJson(entries: ArchiveEntry[]): boolean {
+  let jsonCount = 0;
+  let hasCore = false;
+  for (const entry of entries) {
+    if (entry.directory) continue;
+    const f = entry.filename.toLowerCase().replace(/\\/g, '/');
+    if (!f.endsWith('.json')) continue;
+    jsonCount += 1;
+    if (
+      f.includes('profile_information.json') ||
+      (f.includes('messages/') && f.includes('message_')) ||
+      f.includes('posts/your_posts') ||
+      f.includes('ads_interests.json') ||
+      f.includes('personal_information/profile')
+    ) {
+      hasCore = true;
+      break;
+    }
+  }
+  return jsonCount === 0 || !hasCore;
 }
 
 function isMediaFilename(filename: string): boolean {
@@ -155,6 +239,18 @@ self.onmessage = async (event: MessageEvent) => {
 
     const detectedPlatform = detectPlatformQuick(displayName, entries);
 
+    // Facebook multi-ZIP trap: a media-only part has no profile/messages/posts JSON.
+    // Abort before clearPlatformData so we don't wipe a previous good FB index.
+    if (
+      detectedPlatform === 'facebook' &&
+      source === 'zip' &&
+      facebookZipLacksCoreJson(entries)
+    ) {
+      throw new Error(
+        "Ce ZIP Facebook ne contient presque pas de métadonnées JSON (souvent une partie médias d’un export multi-fichiers). Extrayez toutes les parties du même batch dans un seul dossier avec un outil local open source (PeaZip, 7-Zip), puis importez ce dossier — n’uploadez pas vos archives Meta sur un site de fusion en ligne."
+      );
+    }
+
     postMessage({
       type: 'PROGRESS',
       payload: {
@@ -176,22 +272,34 @@ self.onmessage = async (event: MessageEvent) => {
 
     // path → true creation timestamp (ms)
     const mediaTimestamps = new Map<string, number>();
+    const mediaGps = new Map<string, { latitude: number; longitude: number }>();
 
-    const rememberMediaTimestamp = (uri: string | undefined, ts: number | null | undefined) => {
-      if (!uri || !ts || !Number.isFinite(ts) || ts <= 0) return;
+    const mediaPathKeys = (uri: string): string[] => {
       const normalized = normalizePath(uri);
-      const keys = [
+      return [
         normalized,
         normalized.replace(/\.[^.]+$/, ''),
         normalized.split('/').pop() || ''
       ].filter(Boolean);
+    };
 
-      for (const key of keys) {
+    const rememberMediaTimestamp = (uri: string | undefined, ts: number | null | undefined) => {
+      if (!uri || !ts || !Number.isFinite(ts) || ts <= 0) return;
+      for (const key of mediaPathKeys(uri)) {
         const existing = mediaTimestamps.get(key);
         // Prefer the oldest known timestamp when duplicates collide
         if (existing === undefined || ts < existing) {
           mediaTimestamps.set(key, ts);
         }
+      }
+    };
+
+    const rememberMediaGps = (uri: string | undefined, mediaObj: unknown) => {
+      if (!uri) return;
+      const gps = extractGpsFromMedia(mediaObj);
+      if (!gps) return;
+      for (const key of mediaPathKeys(uri)) {
+        if (!mediaGps.has(key)) mediaGps.set(key, gps);
       }
     };
 
@@ -209,6 +317,16 @@ self.onmessage = async (event: MessageEvent) => {
       if (fromPath) return fromPath;
 
       return lastModDate?.getTime() ?? Date.now();
+    };
+
+    const resolveMediaGps = (filename: string) => {
+      const normalized = normalizePath(filename);
+      return (
+        mediaGps.get(normalized) ||
+        mediaGps.get(normalized.replace(/\.[^.]+$/, '')) ||
+        mediaGps.get(normalized.split('/').pop() || '') ||
+        undefined
+      );
     };
 
     // --- Profile / platform detection ---
@@ -394,6 +512,71 @@ self.onmessage = async (event: MessageEvent) => {
       }
     };
 
+    const ingestFacebookPostLikeItems = (data: unknown, idPrefix: string) => {
+      const items = Array.isArray(data)
+        ? data
+        : Array.isArray((data as { media?: unknown[] })?.media)
+          ? (data as { media: unknown[] }).media
+          : [];
+
+      for (const raw of items) {
+        const post = raw as {
+          timestamp?: number;
+          creation_timestamp?: number;
+          title?: string;
+          data?: Array<{ post?: string }>;
+          uri?: string;
+          attachments?: Array<{
+            data?: Array<{ media?: { uri?: string; creation_timestamp?: number } }>;
+          }>;
+        };
+        const timestamp =
+          toEpochMs(post.timestamp) ||
+          toEpochMs(post.creation_timestamp) ||
+          0;
+        const content = post.data?.[0]?.post || post.title || '';
+        const media: Post['media'] = [];
+
+        if (post.attachments) {
+          for (const attachment of post.attachments) {
+            if (!attachment.data) continue;
+            for (const subItem of attachment.data) {
+              const mediaObj = subItem.media;
+              const uri = mediaObj?.uri;
+              if (!uri) continue;
+              rememberMediaTimestamp(
+                uri,
+                timestamp || toEpochMs(mediaObj?.creation_timestamp)
+              );
+              rememberMediaGps(uri, mediaObj);
+              media.push({
+                relativePath: uri,
+                type: getMediaType(uri) as 'photo' | 'video'
+              });
+            }
+          }
+        } else if (post.uri) {
+          rememberMediaTimestamp(post.uri, timestamp);
+          rememberMediaGps(post.uri, post);
+          media.push({
+            relativePath: post.uri,
+            type: getMediaType(post.uri) as 'photo' | 'video'
+          });
+        }
+
+        if (!content && media.length === 0) continue;
+
+        postBatch.push({
+          id: `${platform}:${idPrefix}:${timestamp}:${content.substring(0, 30)}:${media[0]?.relativePath || ''}`,
+          platform,
+          type: 'post',
+          content,
+          timestamp,
+          media
+        });
+      }
+    };
+
     const extractIgMediaNodes = (item: any): any[] => {
       const nodes: any[] = [];
       if (!item || typeof item !== 'object') return nodes;
@@ -440,6 +623,7 @@ self.onmessage = async (event: MessageEvent) => {
           const uri = item.path || item.uri;
           const ts = toEpochMs(item.creation_timestamp) || fallbackTs;
           rememberMediaTimestamp(uri, ts);
+          rememberMediaGps(uri, item);
           media.push({
             relativePath: uri,
             type: getMediaType(uri) as 'photo' | 'video'
@@ -449,6 +633,7 @@ self.onmessage = async (event: MessageEvent) => {
             const uri = node.uri || node.path;
             const ts = toEpochMs(node.creation_timestamp) || fallbackTs;
             rememberMediaTimestamp(uri, ts);
+            rememberMediaGps(uri, node);
             if (uri) {
               media.push({
                 relativePath: uri,
@@ -509,11 +694,8 @@ self.onmessage = async (event: MessageEvent) => {
       }
 
       try {
-        // A. Messages (inbox + message requests)
-        if (
-          (lowerFilename.includes('messages/inbox/') || lowerFilename.includes('messages/message_requests/')) &&
-          lowerFilename.includes('message_')
-        ) {
+        // A. Messages (inbox, requests, archived, filtered, e2ee cutover)
+        if (isMessageThreadJson(lowerFilename)) {
           const text = await entry.getText();
           const rawData = JSON.parse(text);
           const data = decodeMetaObj(rawData);
@@ -615,54 +797,82 @@ self.onmessage = async (event: MessageEvent) => {
           }
         }
 
-        // C. Facebook Posts
-        else if (platform === 'facebook' && lowerFilename.includes('posts/your_posts')) {
+        // B2. Instagram saved posts (bookmarks — capsule memory)
+        else if (
+          platform === 'instagram' &&
+          (lowerFilename.includes('/saved/saved_posts.json') ||
+            lowerFilename.endsWith('saved_posts.json'))
+        ) {
           const text = await entry.getText();
           const rawData = JSON.parse(text);
           const data = decodeMetaObj(rawData);
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.saved_saved_media)
+              ? data.saved_saved_media
+              : Array.isArray(data?.saved_media)
+                ? data.saved_media
+                : [];
 
-          if (Array.isArray(data)) {
-            for (const post of data) {
-              const timestamp = toEpochMs(post.timestamp) || 0;
-              const content = post.data?.[0]?.post || post.title || '';
-              const media: Post['media'] = [];
-
-              if (post.attachments) {
-                for (const attachment of post.attachments) {
-                  if (attachment.data) {
-                    for (const subItem of attachment.data) {
-                      if (subItem.media?.uri) {
-                        rememberMediaTimestamp(subItem.media.uri, timestamp);
-                        media.push({
-                          relativePath: subItem.media.uri,
-                          type: getMediaType(subItem.media.uri) as 'photo' | 'video'
-                        });
-                      }
-                    }
-                  }
-                }
-              }
-
-              postBatch.push({
-                id: `${platform}:post:${post.timestamp}:${content.substring(0, 30)}`,
-                platform,
-                type: 'post',
-                content,
-                timestamp,
-                media
-              });
-
-              if (postBatch.length >= BATCH_SIZE) {
-                await flushBatches();
-              }
+          for (const item of items) {
+            const labels = labelValueMap(item);
+            const content =
+              labels.Caption ||
+              labels.Title ||
+              labels.Name ||
+              Object.values(labels).find((v) => v.length > 2) ||
+              '';
+            const ts =
+              toEpochMs(item.timestamp) ||
+              toEpochMs(item.timestamp_ms) ||
+              toEpochMs(labels.Time ? Date.parse(labels.Time) / 1000 : null) ||
+              0;
+            if (!content && !ts) continue;
+            postBatch.push({
+              id: `${platform}:saved:${ts}:${content.substring(0, 40)}`,
+              platform,
+              type: 'post',
+              content: content ? `Saved · ${content}` : 'Saved post',
+              timestamp: ts || Date.now(),
+              media: []
+            });
+            if (postBatch.length >= BATCH_SIZE) {
+              await flushBatches();
             }
+          }
+        }
+
+        // C. Facebook posts + albums + uncategorized photos/videos
+        else if (
+          platform === 'facebook' &&
+          (lowerFilename.includes('posts/your_posts') ||
+            lowerFilename.includes('/posts/album/') ||
+            lowerFilename.includes('your_uncategorized_photos') ||
+            lowerFilename.includes('your_videos.json') ||
+            /\/posts\/album\/[^/]+\.json$/.test(lowerFilename))
+        ) {
+          const text = await entry.getText();
+          const rawData = JSON.parse(text);
+          const data = decodeMetaObj(rawData);
+          const idPrefix = lowerFilename.includes('/album/')
+            ? 'album'
+            : lowerFilename.includes('uncategorized')
+              ? 'uncategorized'
+              : lowerFilename.includes('your_videos')
+                ? 'video'
+                : 'post';
+          ingestFacebookPostLikeItems(data, idPrefix);
+
+          if (postBatch.length >= BATCH_SIZE) {
+            await flushBatches();
           }
         }
 
         // D. Ad Targeting
         else if (
           lowerFilename.includes('ads_interests.json') ||
-          lowerFilename.includes('advertisers_who_uploaded_a_contact_list')
+          lowerFilename.includes('advertisers_who_uploaded_a_contact_list') ||
+          lowerFilename.includes('advertisers_using_your_activity_or_information')
         ) {
           const text = await entry.getText();
           const rawData = JSON.parse(text);
@@ -699,6 +909,37 @@ self.onmessage = async (event: MessageEvent) => {
                 advertisers.push(aud);
               }
             }
+
+            // Newer FB export: advertisers_using_your_activity_or_information.json
+            const labelItems = Array.isArray(data)
+              ? data
+              : Array.isArray(data?.label_values)
+                ? [data]
+                : Array.isArray(data?.custom_audiences_info_v2)
+                  ? data.custom_audiences_info_v2
+                  : Array.isArray(data?.vec)
+                    ? data.vec
+                    : [];
+
+            for (const item of labelItems) {
+              if (typeof item === 'string') {
+                advertisers.push(item);
+                continue;
+              }
+              const labels = labelValueMap(item);
+              const name =
+                labels['Advertiser Name'] ||
+                labels.Advertiser ||
+                labels.Name ||
+                labels.Title ||
+                item.advertiser_name ||
+                item.title ||
+                item.name;
+              if (typeof name === 'string' && name.trim()) {
+                advertisers.push(name.trim());
+              }
+            }
+
             existingAd.advertisers = Array.from(new Set([...existingAd.advertisers, ...advertisers]));
           }
 
@@ -730,13 +971,15 @@ self.onmessage = async (event: MessageEvent) => {
 
     for (let i = 0; i < pendingMediaFiles.length; i++) {
       const { filename, lastModDate } = pendingMediaFiles[i];
+      const gps = resolveMediaGps(filename);
       mediaBatch.push({
         id: `${platform}:${filename}`,
         platform,
         relativePath: filename,
         type: getMediaType(filename),
         source: inferMediaSource(filename),
-        timestamp: resolveMediaTimestamp(filename, lastModDate)
+        timestamp: resolveMediaTimestamp(filename, lastModDate),
+        ...(gps ? { latitude: gps.latitude, longitude: gps.longitude } : {})
       });
 
       if (mediaBatch.length >= BATCH_SIZE) {

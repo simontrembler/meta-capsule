@@ -6,6 +6,18 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+### Ajouté
+- Ingest Messenger Facebook : `archived_threads`, `filtered_threads`, `e2ee_cutover`
+- Albums / photos non classées / vidéos Facebook
+- Annonceurs `advertisers_using_your_activity_or_information`
+- GPS depuis EXIF JSON export (`media.latitude` / `longitude`)
+- Posts Instagram sauvegardés (`saved_posts`)
+- Carte Leaflet (OSM) dans la galerie + widget synthèse « J’y étais »
+
+### Changé
+- Un ZIP Facebook sans JSON cœur est refusé avant d’effacer l’index (piège multi-parties)
+- Hint import / archives : extraire toutes les parties localement (PeaZip / 7-Zip) puis ouvrir le dossier — pas d’upload vers un merger en ligne
+
 ## [1.0.2] - 2026-08-13
 
 ### Ajouté

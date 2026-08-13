@@ -122,7 +122,9 @@ Instagram mélange **trois formes** :
 | DMs inbox + message_requests | `conversations`, `messages` |
 | Posts / stories / other JSON + binaires | `posts`, `media` |
 | Intérêts / advertisers (fichiers supportés) | `adTargeting` |
-| Followers, likes, comments, insights, GPS carte | Non indexés (volontaire — voir [roadmap](roadmap.md)) |
+| Followers, likes, comments, insights | Non indexés (volontaire — voir [roadmap](roadmap.md)) |
+| GPS depuis `media_metadata` EXIF | Oui → `media.latitude` / `longitude` (pas encore de carte UI) |
+| Saved posts IG | Oui → `posts` (préfixe « Saved · ») |
 
 Ingest : [`src/workers/ingestion.worker.ts`](../src/workers/ingestion.worker.ts). Modèles : [`src/db/models.ts`](../src/db/models.ts).
 

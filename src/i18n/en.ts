@@ -83,6 +83,8 @@ export const en: Record<TranslationKey, string> = {
   'import.inProgress': 'Opening capsule…',
   'import.dontClose': 'Please keep this tab open during processing. Large archives may take a few minutes.',
   'import.privacyBadge': '100% local · no upload',
+  'import.facebookMultiZip': 'Facebook split across ZIPs? Meta Capsule imports one archive at a time. Extract every part into the same folder (the trees overlay), then use “Open a folder”. Local open-source tools: PeaZip or 7-Zip — don’t upload Meta ZIPs to an online merge site.',
+  'import.facebookMultiZipLink': 'PeaZip',
 
   // Settings
   'settings.privacyTitle': 'Security & Privacy',
@@ -106,7 +108,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact.',
+  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact. Multi-ZIP Facebook export: extract every part into one folder (PeaZip / 7-Zip), then open that folder — not a single ZIP.',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',
@@ -152,6 +154,10 @@ export const en: Record<TranslationKey, string> = {
   'dashboard.yearsAgo': '{count} year(s) ago',
   'dashboard.topChats': 'Busiest conversations',
   'dashboard.topChatsEmpty': 'No conversations to rank.',
+  'dashboard.placesTitle': 'I was there',
+  'dashboard.placesSubtitle': 'Places from GPS coordinates in your media',
+  'dashboard.placesEmpty': 'No GPS coordinates in this export — often missing outside story/post EXIF.',
+  'dashboard.placesOpen': 'Open the map ({count})',
 
   // Messaging
   'messages.searchContact': 'Search a contact...',
@@ -201,6 +207,14 @@ export const en: Record<TranslationKey, string> = {
   'gallery.sourceLabel.message': 'Message',
   'gallery.sourceLabel.other': 'Other',
   'gallery.downloadPhoto': 'Download',
+  'gallery.view.grid': 'Grid',
+  'gallery.view.map': 'Map ({count})',
+  'gallery.mapCount': '{count} geotagged media (filters applied)',
+
+  'map.emptyTitle': 'No places to show',
+  'map.emptyHint': 'No GPS coordinates in the filtered media. Re-import an archive with EXIF, or widen filters.',
+  'map.tilesHint': 'OpenStreetMap basemap (network required). Your GPS points stay local — nothing is sent to Meta Capsule.',
+  'map.tilesHintShort': 'OSM tiles · network · local points',
 
   // Ads
   'ads.loading': 'Loading advertising data...',
@@ -214,7 +228,7 @@ export const en: Record<TranslationKey, string> = {
   'ads.interestsFilter': 'Filter interests...',
   'ads.interestsEmpty': 'No interests found',
   'ads.advertisersTitle': 'Advertisers targeting your details ({count})',
-  'ads.advertisersSubtitle': 'Companies that uploaded your contact details (email, phone) to target you',
+  'ads.advertisersSubtitle': 'Companies that use your activity or contact details to target you',
   'ads.advertisersFilter': 'Filter advertisers...',
   'ads.advertisersEmpty': 'No advertisers found',
   'ads.directTargeting': 'Direct targeting'

@@ -17,13 +17,16 @@ import {
   Filter,
   Calendar,
   MessageSquare,
-  LayoutGrid
+  LayoutGrid,
+  Map as MapIcon
 } from 'lucide-react';
+import { PlacesMap, hasGpsCoords } from './PlacesMap';
 
 type SourceFilter = 'all' | MediaSource;
 type TypeFilter = 'all' | 'photo' | 'video' | 'audio';
 type PlatformFilter = 'all' | 'facebook' | 'instagram';
 type MonthFilter = 'all' | string; // 'YYYY-MM'
+type GalleryViewMode = 'grid' | 'map';
 
 function monthKeyFromTimestamp(timestamp: number): string {
   const date = new Date(timestamp);
@@ -59,11 +62,24 @@ function getSourceLabel(
 
 function inferSourceFromPath(relativePath: string): MediaSource {
   const path = relativePath.replace(/\\/g, '/').toLowerCase();
-  if (path.includes('/messages/') || path.includes('messages/inbox') || path.includes('message_requests')) {
+  if (
+    path.includes('/messages/') ||
+    path.includes('messages/inbox') ||
+    path.includes('message_requests') ||
+    path.includes('archived_threads') ||
+    path.includes('filtered_threads') ||
+    path.includes('e2ee_cutover')
+  ) {
     return 'message';
   }
   if (path.includes('/stories/') || path.includes('/media/stories')) return 'story';
-  if (path.includes('/media/posts') || path.includes('/posts/')) return 'post';
+  if (
+    path.includes('/media/posts') ||
+    path.includes('/posts/') ||
+    path.includes('uncategorized')
+  ) {
+    return 'post';
+  }
   return 'other';
 }
 
@@ -211,7 +227,13 @@ const GalleryItem: React.FC<{
 };
 
 export const GalleryModule: React.FC = () => {
-  const { getArchiveSource, requestedMediaId, clearRequestedMedia } = useArchive();
+  const {
+    getArchiveSource,
+    requestedMediaId,
+    clearRequestedMedia,
+    requestedGalleryView,
+    clearRequestedGalleryView
+  } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [allMedia, setAllMedia] = useState<MediaAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -219,9 +241,16 @@ export const GalleryModule: React.FC = () => {
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
+  const [viewMode, setViewMode] = useState<GalleryViewMode>('grid');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
   const pendingMediaId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!requestedGalleryView) return;
+    setViewMode(requestedGalleryView);
+    clearRequestedGalleryView();
+  }, [requestedGalleryView, clearRequestedGalleryView]);
 
   useEffect(() => {
     let cancelled = false;
@@ -310,15 +339,31 @@ export const GalleryModule: React.FC = () => {
   }, [requestedMediaId, clearRequestedMedia]);
 
   const counts = useMemo(() => {
-    const base = { post: 0, story: 0, message: 0, other: 0, photo: 0, video: 0, audio: 0, total: allMedia.length };
+    const base = {
+      post: 0,
+      story: 0,
+      message: 0,
+      other: 0,
+      photo: 0,
+      video: 0,
+      audio: 0,
+      places: 0,
+      total: allMedia.length
+    };
     for (const item of allMedia) {
       base[item.source || 'other'] += 1;
       if (item.type === 'photo' || item.type === 'video' || item.type === 'audio') {
         base[item.type] += 1;
       }
+      if (hasGpsCoords(item)) base.places += 1;
     }
     return base;
   }, [allMedia]);
+
+  const geotaggedItems = useMemo(
+    () => filteredItems.filter(hasGpsCoords),
+    [filteredItems]
+  );
 
   const openLightbox = async (index: number) => {
     setLightboxIndex(index);
@@ -331,6 +376,11 @@ export const GalleryModule: React.FC = () => {
         console.error('Failed to open lightbox media:', err);
       }
     }
+  };
+
+  const openLightboxForItem = async (item: MediaAttachment) => {
+    const index = filteredItems.findIndex((fi) => fi.id === item.id);
+    if (index >= 0) await openLightbox(index);
   };
 
   useEffect(() => {
@@ -400,6 +450,14 @@ export const GalleryModule: React.FC = () => {
                   months: mediaGroups.length
                 })}
           </span>
+          <div className="ml-auto flex border border-ink-200 p-0.5 shrink-0">
+            {chip(viewMode === 'grid', () => setViewMode('grid'), t('gallery.view.grid'))}
+            {chip(
+              viewMode === 'map',
+              () => setViewMode('map'),
+              t('gallery.view.map', { count: counts.places })
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -462,8 +520,22 @@ export const GalleryModule: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 space-y-8">
-        {filteredItems.length > 0 ? (
+      <div className="flex-1 overflow-y-auto pr-2 space-y-8 min-h-0">
+        {viewMode === 'map' ? (
+          <div className="h-full min-h-[360px] flex flex-col">
+            <div className="mb-2 flex items-center gap-2 text-ink-700">
+              <MapIcon size={16} className="text-brand-600" />
+              <span className="text-xs font-semibold">
+                {t('gallery.mapCount', { count: geotaggedItems.length })}
+              </span>
+            </div>
+            <PlacesMap
+              items={geotaggedItems}
+              className="min-h-[360px] flex-1 rounded-md"
+              onSelect={(item) => void openLightboxForItem(item)}
+            />
+          </div>
+        ) : filteredItems.length > 0 ? (
           mediaGroups.map((group) => (
             <div key={group.key} className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-ink-200">

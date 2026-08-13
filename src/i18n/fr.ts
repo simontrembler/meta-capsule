@@ -84,6 +84,8 @@ export const fr = {
   'import.inProgress': 'Ouverture de la capsule…',
   'import.dontClose': "Ne fermez pas cet onglet pendant le traitement. Les grosses archives peuvent prendre quelques minutes.",
   'import.privacyBadge': '100 % local · aucun upload',
+  'import.facebookMultiZip': 'Facebook en plusieurs ZIP ? Meta Capsule n’importe qu’une archive à la fois. Extrayez toutes les parties dans le même dossier (les arbres se superposent), puis utilisez « Ouvrir un dossier ». Outils open source locaux : PeaZip ou 7-Zip — ne téléversez pas vos ZIP Meta sur un site de fusion en ligne.',
+  'import.facebookMultiZipLink': 'PeaZip',
 
   // Settings
   'settings.privacyTitle': 'Sécurité et Confidentialité',
@@ -107,7 +109,7 @@ export const fr = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre.',
+  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre. Export Facebook multi-ZIP : extrayez toutes les parties dans un dossier (PeaZip / 7-Zip), puis ouvrez ce dossier — pas un ZIP seul.',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',
@@ -153,6 +155,10 @@ export const fr = {
   'dashboard.yearsAgo': 'Il y a {count} an(s)',
   'dashboard.topChats': 'Conversations les plus denses',
   'dashboard.topChatsEmpty': 'Aucune conversation à classer.',
+  'dashboard.placesTitle': 'J’y étais',
+  'dashboard.placesSubtitle': 'Lieux tirés des coordonnées GPS de vos médias',
+  'dashboard.placesEmpty': 'Aucune coordonnée GPS dans cet export — souvent absentes hors EXIF stories/posts.',
+  'dashboard.placesOpen': 'Voir la carte ({count})',
 
   // Messaging
   'messages.searchContact': 'Rechercher un contact...',
@@ -202,6 +208,14 @@ export const fr = {
   'gallery.sourceLabel.message': 'Message',
   'gallery.sourceLabel.other': 'Autre',
   'gallery.downloadPhoto': 'Télécharger',
+  'gallery.view.grid': 'Grille',
+  'gallery.view.map': 'Carte ({count})',
+  'gallery.mapCount': '{count} médias géolocalisés (filtres appliqués)',
+
+  'map.emptyTitle': 'Aucun lieu à afficher',
+  'map.emptyHint': 'Aucune coordonnée GPS dans les médias filtrés. Réimportez une archive avec EXIF, ou élargissez les filtres.',
+  'map.tilesHint': 'Fond de carte OpenStreetMap (réseau requis). Vos points GPS restent locaux — rien n’est envoyé à Meta Capsule.',
+  'map.tilesHintShort': 'Tuiles OSM · réseau · points locaux',
 
   // Ads
   'ads.loading': 'Chargement des données publicitaires...',
@@ -215,7 +229,7 @@ export const fr = {
   'ads.interestsFilter': "Filtrer les centres d'intérêt...",
   'ads.interestsEmpty': "Aucun centre d'intérêt trouvé",
   'ads.advertisersTitle': 'Annonceurs ciblant vos coordonnées ({count})',
-  'ads.advertisersSubtitle': 'Entreprises ayant importé vos coordonnées (e-mail, téléphone) pour vous cibler',
+  'ads.advertisersSubtitle': 'Entreprises qui utilisent votre activité ou vos coordonnées pour vous cibler',
   'ads.advertisersFilter': 'Filtrer les annonceurs...',
   'ads.advertisersEmpty': 'Aucun annonceur trouvé',
   'ads.directTargeting': 'Ciblage direct'

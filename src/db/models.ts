@@ -73,6 +73,9 @@ export interface MediaAttachment {
   source: MediaSource;
   timestamp: number; // Epoch ms
   associatedId?: string; // Message ID or Post ID
+  /** From export media_metadata EXIF when present */
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface AdTargeting {

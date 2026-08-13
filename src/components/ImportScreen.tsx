@@ -112,6 +112,18 @@ export const ImportScreen: React.FC = () => {
                   </span>
                 </div>
 
+                <p className="mt-4 max-w-md text-xs leading-relaxed text-ink-400">
+                  {t('import.facebookMultiZip')}{' '}
+                  <a
+                    href="https://peazip.github.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-800"
+                  >
+                    {t('import.facebookMultiZipLink')}
+                  </a>
+                </p>
+
                 {ingestionError && (
                   <div className="mt-6 flex max-w-md items-start gap-3 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
                     <AlertCircle className="mt-0.5 shrink-0" size={18} />
