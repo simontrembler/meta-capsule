@@ -35,6 +35,15 @@ import {
 export type { ArchivePlatform, IngestionStats, ZipAccessState };
 export type { MediaArchiveSource };
 
+export type ActiveTab =
+  | 'import'
+  | 'dashboard'
+  | 'messages'
+  | 'gallery'
+  | 'archives'
+  | 'ads'
+  | 'settings';
+
 function guessPlatformFromZipName(name: string): ArchivePlatform | null {
   const n = name.toLowerCase();
   // Prefer Meta's official download prefixes so we never flip FB ↔ IG on weak matches
@@ -72,8 +81,8 @@ interface ArchiveContextType {
   supportsFileSystemAccess: boolean;
   supportsDirectoryPicker: boolean;
   isRestoringSession: boolean;
-  activeTab: 'import' | 'dashboard' | 'messages' | 'gallery' | 'ads' | 'settings';
-  setActiveTab: (tab: 'import' | 'dashboard' | 'messages' | 'gallery' | 'ads' | 'settings') => void;
+  activeTab: ActiveTab;
+  setActiveTab: (tab: ActiveTab) => void;
   isIngesting: boolean;
   ingestionProgress: number;
   ingestionStatusText: string;
@@ -123,9 +132,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [folderMaps, setFolderMaps] = useState<Partial<Record<ArchivePlatform, Map<string, File>>>>(
     {}
   );
-  const [activeTab, setActiveTab] = useState<
-    'import' | 'dashboard' | 'messages' | 'gallery' | 'ads' | 'settings'
-  >('import');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('import');
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestionProgress, setIngestionProgress] = useState(0);
   const [ingestionStatusText, setIngestionStatusText] = useState('');

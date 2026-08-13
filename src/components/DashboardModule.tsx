@@ -156,7 +156,7 @@ export const DashboardModule: React.FC = () => {
   const padding = 30;
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-6xl mx-auto pb-[calc(3.5rem+env(safe-area-inset-bottom,0px)+1rem)] md:pb-8">
       {/* Flat ink hero — forced surface for contrast */}
       <div className="mc-surface-ink px-4 py-5 sm:px-7 sm:py-7 rounded-md">
         <span className="inline-flex items-center px-2 py-0.5 border border-ink-600 mc-text-on-ink-accent text-[10px] font-semibold uppercase tracking-[0.18em]">

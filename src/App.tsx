@@ -2,13 +2,14 @@ import React from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ArchiveProvider, useArchive } from './context/ArchiveContext';
-import { ShellProvider } from './context/ShellContext';
 import { ImportScreen } from './components/ImportScreen';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { DashboardModule } from './components/DashboardModule';
 import { MessagingModule } from './components/MessagingModule';
 import { GalleryModule } from './components/GalleryModule';
+import { ArchivesModule } from './components/ArchivesModule';
 import { AdTransparencyModule } from './components/AdTransparencyModule';
 import { SettingsModule } from './components/SettingsModule';
 import { IngestOverlay } from './components/IngestOverlay';
@@ -45,6 +46,8 @@ const AppContent: React.FC = () => {
         return <MessagingModule />;
       case 'gallery':
         return <GalleryModule />;
+      case 'archives':
+        return <ArchivesModule />;
       case 'ads':
         return <AdTransparencyModule />;
       case 'settings':
@@ -55,25 +58,24 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <ShellProvider>
-      <div className="flex h-[100dvh] bg-ink-50 overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-          <Header />
-          <main className="flex-1 overflow-auto bg-ink-50">
-            {renderActiveModule()}
-          </main>
-        </div>
-        {isIngesting && (
-          <IngestOverlay
-            progress={ingestionProgress}
-            statusText={ingestionStatusText}
-            title={t('archives.ingestTitle')}
-            hint={t('archives.ingestHint')}
-          />
-        )}
+    <div className="flex h-[100dvh] bg-ink-50 overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <Header />
+        <main className="flex-1 min-h-0 overflow-auto bg-ink-50">
+          {renderActiveModule()}
+        </main>
+        <MobileBottomNav />
       </div>
-    </ShellProvider>
+      {isIngesting && (
+        <IngestOverlay
+          progress={ingestionProgress}
+          statusText={ingestionStatusText}
+          title={t('archives.ingestTitle')}
+          hint={t('archives.ingestHint')}
+        />
+      )}
+    </div>
   );
 };
 

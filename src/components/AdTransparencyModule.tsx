@@ -74,7 +74,7 @@ export const AdTransparencyModule: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem-3.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
       <div className="mc-surface-ink px-4 py-5 sm:px-6 sm:py-6 shrink-0 rounded-md">
         <div className="flex items-center gap-3 mb-3">
           <span className="inline-flex items-center px-2 py-0.5 border border-ink-600 mc-text-on-ink-accent text-[10px] font-semibold uppercase tracking-[0.18em]">

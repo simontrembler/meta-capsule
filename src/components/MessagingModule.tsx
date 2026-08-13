@@ -417,7 +417,7 @@ export const MessagingModule: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-ink-50">
+    <div className="h-[calc(100dvh-3.5rem-3.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-ink-50">
       <div className={`w-full md:w-80 border-r border-ink-200 bg-white flex flex-col h-full shrink-0 ${activeConv ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-ink-100">
           <div className="relative">
