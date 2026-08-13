@@ -5,6 +5,7 @@ import { useShell } from '../context/ShellContext';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
 import { GlobalSearch } from './GlobalSearch';
+import { SupportLinks } from './SupportLinks';
 import { ShieldCheck, AlertTriangle, FileCheck, Upload, KeyRound, Menu, Search } from 'lucide-react';
 import type { TranslationKey } from '../i18n';
 
@@ -141,6 +142,7 @@ export const Header: React.FC = () => {
         </button>
         <ThemeToggle compact />
         <LanguageToggle compact />
+        <SupportLinks variant="icon" />
 
         <div
           className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 border border-ink-200 text-ink-600 text-xs font-semibold"
