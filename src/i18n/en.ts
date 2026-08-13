@@ -122,6 +122,11 @@ export const en: Record<TranslationKey, string> = {
   'dashboard.noProfile': 'No detailed profile found in the archive.',
   'dashboard.openMessages': 'Browse my conversations',
   'dashboard.openGallery': 'Explore the photo gallery',
+  'dashboard.onThisDay': 'On this day',
+  'dashboard.onThisDayEmpty': 'Nothing on this date in the archive — try another day.',
+  'dashboard.yearsAgo': '{count} year(s) ago',
+  'dashboard.topChats': 'Busiest conversations',
+  'dashboard.topChatsEmpty': 'No conversations to rank.',
 
   // Messaging
   'messages.searchContact': 'Search a contact...',
@@ -140,6 +145,8 @@ export const en: Record<TranslationKey, string> = {
   'messages.jumpTo': 'Jump to',
   'messages.jumpToAll': 'Full conversation',
   'messages.monthEmpty': 'No messages that month',
+  'messages.exportThread': 'Export',
+  'messages.exportThreadTitle': 'Download this thread as local HTML',
   'dashboard.interactions': '{year} : {count} interactions',
 
   // Gallery
