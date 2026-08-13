@@ -15,16 +15,20 @@ interface DashboardStats {
 }
 
 export const DashboardModule: React.FC = () => {
-  const { stats, setActiveTab, getZipFile } = useArchive();
+  const { stats, setActiveTab, getArchiveSource } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dbStats, setDbStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const primaryZip = stats?.platform ? getZipFile(stats.platform) : null;
+  const primarySource = stats?.platform ? getArchiveSource(stats.platform) : null;
+  const archiveName =
+    (primarySource && (primarySource.kind === 'zip' ? primarySource.file.name : primarySource.name)) ||
+    stats?.archives[stats.platform ?? 'facebook']?.zipFileName ||
+    '';
   const displayUsername =
     profile?.username ||
-    (primaryZip?.name.match(/^instagram-([^/\\]+?)-\d{4}/i)?.[1] ?? '');
+    (archiveName.match(/^instagram-([^/\\]+?)-\d{4}/i)?.[1] ?? '');
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -263,7 +267,7 @@ export const DashboardModule: React.FC = () => {
                   <ProfileAvatar
                     name={profile.name}
                     relativePath={profile.profilePicture}
-                    zipFile={primaryZip}
+                    archiveSource={primarySource}
                     size="md"
                   />
                   <div>

@@ -3,19 +3,19 @@ import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
 import type { Conversation, Message, MessageAttachment } from '../db/models';
-import { getMediaBlobUrl } from '../utils/zipMediaResolver';
+import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
 import Dexie from 'dexie';
 import { Search, MessageSquare, ArrowLeft, AlertCircle, FileText, Mic } from 'lucide-react';
 
 // Helper component to render media attachments dynamically
-const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | null }> = ({ attachment, zipFile }) => {
+const MessageMedia: React.FC<{ attachment: MessageAttachment; archiveSource: MediaArchiveSource | File | null }> = ({ attachment, archiveSource }) => {
   const { t } = useLanguage();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!zipFile) {
+    if (!archiveSource) {
       setIsLoading(false);
       return;
     }
@@ -24,7 +24,7 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
     const resolveMedia = async () => {
       try {
         setIsLoading(true);
-        const url = await getMediaBlobUrl(zipFile, attachment.relativePath);
+        const url = await getMediaBlobUrl(archiveSource, attachment.relativePath);
         if (isMounted) {
           setBlobUrl(url);
           setError(false);
@@ -42,9 +42,9 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
     return () => {
       isMounted = false;
     };
-  }, [attachment.relativePath, zipFile]);
+  }, [attachment.relativePath, archiveSource]);
 
-  if (!zipFile) {
+  if (!archiveSource) {
     return (
       <div className="flex items-center gap-2 p-3 bg-ink-100 rounded-md text-xs text-ink-500 max-w-xs border border-ink-200">
         <AlertCircle size={14} className="text-brand-600 shrink-0" />
@@ -109,8 +109,61 @@ const MessageMedia: React.FC<{ attachment: MessageAttachment; zipFile: File | nu
   );
 };
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function HighlightedText({
+  text,
+  query,
+  isMe
+}: {
+  text: string;
+  query: string;
+  isMe: boolean;
+}) {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return <>{text}</>;
+  }
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(trimmed)})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.toLowerCase() === trimmed.toLowerCase() ? (
+          <mark
+            key={`${part}-${index}`}
+            className={
+              isMe
+                ? 'bg-brand-400/50 text-inherit rounded-sm px-0.5'
+                : 'bg-brand-200 text-ink-950 rounded-sm px-0.5'
+            }
+          >
+            {part}
+          </mark>
+        ) : (
+          <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+        )
+      )}
+    </>
+  );
+}
+
+function monthKeyFromTimestamp(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(key: string, dateLocale: string): string {
+  const [year, month] = key.split('-').map(Number);
+  const date = new Date(year, month - 1, 1);
+  const labelRaw = date.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' });
+  return labelRaw.charAt(0).toUpperCase() + labelRaw.slice(1);
+}
+
 export const MessagingModule: React.FC = () => {
-  const { getZipFile } = useArchive();
+  const { getArchiveSource } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -120,6 +173,9 @@ export const MessagingModule: React.FC = () => {
   const [chatSearchQuery, setChatSearchQuery] = useState('');
   const [isSearchingChat, setIsSearchingChat] = useState(false);
   const [searchResults, setSearchResults] = useState<Message[]>([]);
+  const [monthOptions, setMonthOptions] = useState<string[]>([]);
+  const [monthJumpKey, setMonthJumpKey] = useState('');
+  const [monthMessages, setMonthMessages] = useState<Message[]>([]);
   
   // Pagination State
   const [page, setPage] = useState(0);
@@ -166,6 +222,8 @@ export const MessagingModule: React.FC = () => {
     setChatSearchQuery('');
     setIsSearchingChat(false);
     setSearchResults([]);
+    setMonthJumpKey('');
+    setMonthMessages([]);
 
     const limit = 50;
     try {
@@ -199,12 +257,49 @@ export const MessagingModule: React.FC = () => {
       loadInitialMessages(activeConv.id);
     } else {
       setMessages([]);
+      setMonthOptions([]);
     }
   }, [activeConv, loadInitialMessages]);
 
+  useEffect(() => {
+    if (!activeConv) return;
+    let cancelled = false;
+
+    const loadMonths = async () => {
+      const first = await db.messages
+        .where('[conversationId+timestamp]')
+        .between([activeConv.id, Dexie.minKey], [activeConv.id, Dexie.maxKey])
+        .first();
+      const last = await db.messages
+        .where('[conversationId+timestamp]')
+        .between([activeConv.id, Dexie.minKey], [activeConv.id, Dexie.maxKey])
+        .last();
+      if (!first || !last || cancelled) {
+        if (!cancelled) setMonthOptions([]);
+        return;
+      }
+
+      const months: string[] = [];
+      const cursor = new Date(first.timestamp);
+      cursor.setDate(1);
+      cursor.setHours(0, 0, 0, 0);
+      const end = new Date(last.timestamp);
+      while (cursor <= end) {
+        months.push(monthKeyFromTimestamp(cursor.getTime()));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      if (!cancelled) setMonthOptions(months);
+    };
+
+    void loadMonths();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeConv]);
+
   // 4. Load more messages on scroll up (Infinite Scroll)
   const loadMoreMessages = async () => {
-    if (!activeConv || isLoadingMessages || !hasMore || isSearchingChat) return;
+    if (!activeConv || isLoadingMessages || !hasMore || isSearchingChat || monthJumpKey) return;
 
     setIsLoadingMessages(true);
     const limit = 50;
@@ -248,8 +343,7 @@ export const MessagingModule: React.FC = () => {
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
-    // If scrolled to top, load more messages
-    if (container.scrollTop === 0 && hasMore && !isLoadingMessages && !isSearchingChat) {
+    if (container.scrollTop === 0 && hasMore && !isLoadingMessages && !isSearchingChat && !monthJumpKey) {
       loadMoreMessages();
     }
   };
@@ -264,6 +358,8 @@ export const MessagingModule: React.FC = () => {
     }
 
     setIsSearchingChat(true);
+    setMonthJumpKey('');
+    setMonthMessages([]);
     setIsLoadingMessages(true);
 
     try {
@@ -287,10 +383,51 @@ export const MessagingModule: React.FC = () => {
     setChatSearchQuery('');
     setIsSearchingChat(false);
     setSearchResults([]);
-    if (activeConv) {
+    if (activeConv && !monthJumpKey) {
       loadInitialMessages(activeConv.id);
     }
   };
+
+  const jumpToMonth = async (key: string) => {
+    if (!activeConv) return;
+    if (!key) {
+      setMonthJumpKey('');
+      setMonthMessages([]);
+      await loadInitialMessages(activeConv.id);
+      return;
+    }
+
+    const [year, month] = key.split('-').map(Number);
+    const start = new Date(year, month - 1, 1).getTime();
+    const end = new Date(year, month, 1).getTime();
+
+    setIsSearchingChat(false);
+    setSearchResults([]);
+    setIsLoadingMessages(true);
+    try {
+      const batch = await db.messages
+        .where('[conversationId+timestamp]')
+        .between([activeConv.id, start], [activeConv.id, end], true, false)
+        .toArray();
+      setMonthJumpKey(key);
+      setMonthMessages(batch);
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = 0;
+        }
+      }, 30);
+    } catch (err) {
+      console.error('Error jumping to month:', err);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+
+  const displayedMessages = monthJumpKey
+    ? monthMessages
+    : isSearchingChat
+      ? searchResults
+      : messages;
 
 
   return (
@@ -376,7 +513,7 @@ export const MessagingModule: React.FC = () => {
         {activeConv ? (
           <>
             {/* Chat Header */}
-            <div className="h-14 md:h-16 bg-white border-b border-ink-200 px-3 sm:px-6 flex items-center justify-between shrink-0 gap-2">
+            <div className="min-h-14 md:h-16 bg-white border-b border-ink-200 px-3 sm:px-6 py-2 flex items-center justify-between shrink-0 gap-2 flex-wrap">
               <div className="flex items-center gap-3 min-w-0">
                 <button
                   onClick={() => setActiveConv(null)}
@@ -397,33 +534,51 @@ export const MessagingModule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Chat Search Form */}
-              <form onSubmit={handleChatSearch} className="hidden sm:flex items-center gap-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder={t('messages.searchInChat')}
-                    value={chatSearchQuery}
-                    onChange={(e) => setChatSearchQuery(e.target.value)}
-                    className="pl-3 pr-8 py-1.5 rounded-md bg-ink-50 border border-ink-200 hover:border-ink-200 focus:border-brand-500 focus:bg-white text-xs font-semibold outline-none transition-all w-48"
-                  />
-                  {isSearchingChat && (
-                    <button
-                      type="button"
-                      onClick={clearChatSearch}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600 text-xs font-bold"
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {monthOptions.length > 0 && (
+                  <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-400">
+                    <span className="hidden sm:inline">{t('messages.jumpTo')}</span>
+                    <select
+                      value={monthJumpKey}
+                      onChange={(e) => void jumpToMonth(e.target.value)}
+                      className="max-w-[9.5rem] rounded-md border border-ink-200 bg-ink-50 px-2 py-1.5 text-xs font-semibold text-ink-800 outline-none focus:border-brand-500"
                     >
-                      ✕
-                    </button>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 rounded-md bg-[#1C1B1A] hover:bg-[#2F2C29] text-[#F7F1EA] text-xs font-semibold transition-colors"
-                >
-                  {t('messages.search')}
-                </button>
-              </form>
+                      <option value="">{t('messages.jumpToAll')}</option>
+                      {monthOptions.map((key) => (
+                        <option key={key} value={key}>
+                          {formatMonthLabel(key, dateLocale)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <form onSubmit={handleChatSearch} className="flex items-center gap-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder={t('messages.searchInChat')}
+                      value={chatSearchQuery}
+                      onChange={(e) => setChatSearchQuery(e.target.value)}
+                      className="pl-3 pr-8 py-1.5 rounded-md bg-ink-50 border border-ink-200 hover:border-ink-200 focus:border-brand-500 focus:bg-white text-xs font-semibold outline-none transition-all w-36 sm:w-48"
+                    />
+                    {isSearchingChat && (
+                      <button
+                        type="button"
+                        onClick={clearChatSearch}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-md bg-[#1C1B1A] hover:bg-[#2F2C29] text-[#F7F1EA] text-xs font-semibold transition-colors"
+                  >
+                    {t('messages.search')}
+                  </button>
+                </form>
+              </div>
             </div>
 
             {/* Messages Container */}
@@ -449,8 +604,21 @@ export const MessagingModule: React.FC = () => {
                 </div>
               )}
 
+              {monthJumpKey && (
+                <div className="sticky top-0 z-10 bg-ink-100 border border-ink-200 rounded-md p-3 text-center text-xs text-ink-700 font-semibold flex items-center justify-between">
+                  <span>{formatMonthLabel(monthJumpKey, dateLocale)}</span>
+                  <button onClick={() => void jumpToMonth('')} className="text-ink-600 hover:text-ink-900 underline">
+                    {t('messages.backToChat')}
+                  </button>
+                </div>
+              )}
+
+              {monthJumpKey && monthMessages.length === 0 && !isLoadingMessages && (
+                <p className="text-center text-sm text-ink-400 py-8">{t('messages.monthEmpty')}</p>
+              )}
+
               {/* Messages List */}
-              {(isSearchingChat ? searchResults : messages).map((msg, idx, arr) => {
+              {displayedMessages.map((msg, idx, arr) => {
                 const isMe = msg.isFromUser;
                 const prevMsg = arr[idx - 1];
                 const showSenderName = !isMe && (!prevMsg || prevMsg.senderName !== msg.senderName);
@@ -489,7 +657,11 @@ export const MessagingModule: React.FC = () => {
                         {/* Text Content */}
                         {msg.content && (
                           <p className="mc-selectable leading-relaxed whitespace-pre-wrap break-words font-medium">
-                            {msg.content}
+                            {isSearchingChat ? (
+                              <HighlightedText text={msg.content} query={chatSearchQuery} isMe={isMe} />
+                            ) : (
+                              msg.content
+                            )}
                           </p>
                         )}
 
@@ -500,7 +672,7 @@ export const MessagingModule: React.FC = () => {
                               <MessageMedia
                                 key={attIdx}
                                 attachment={att}
-                                zipFile={getZipFile(msg.platform)}
+                                archiveSource={getArchiveSource(msg.platform)}
                               />
                             ))}
                           </div>

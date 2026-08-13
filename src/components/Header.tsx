@@ -8,14 +8,14 @@ import type { TranslationKey } from '../i18n';
 
 function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
   const {
-    zipFiles,
     zipAccessByPlatform,
     zipNames,
     stats,
     reauthorizeZipAccess,
     pickZipForMedia,
     supportsFileSystemAccess,
-    attachZipForMedia
+    attachZipForMedia,
+    hasMediaAccess
   } = useArchive();
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +23,7 @@ function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
   const meta = stats?.archives[platform];
   if (!meta) return null;
 
-  const ready = Boolean(zipFiles[platform]);
+  const ready = hasMediaAccess(platform);
   const access = zipAccessByPlatform[platform] ?? 'unavailable';
   const label = platform === 'facebook' ? 'FB' : 'IG';
   const name = zipNames[platform] || meta.zipFileName || label;
@@ -83,7 +83,7 @@ function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
 }
 
 export const Header: React.FC = () => {
-  const { activeTab, zipAccessState, stats, zipFiles } = useArchive();
+  const { activeTab, zipAccessState, stats, hasMediaAccess } = useArchive();
   const { t } = useLanguage();
   const { toggleNav } = useShell();
 
@@ -96,8 +96,8 @@ export const Header: React.FC = () => {
   };
 
   const platforms = stats?.platforms ?? [];
-  const allReady = platforms.length > 0 && platforms.every((p) => Boolean(zipFiles[p]));
-  const anyPending = platforms.some((p) => !zipFiles[p] && stats?.archives[p] != null);
+  const allReady = platforms.length > 0 && platforms.every((p) => hasMediaAccess(p));
+  const anyPending = platforms.some((p) => !hasMediaAccess(p) && stats?.archives[p] != null);
 
   return (
     <header className="min-h-14 h-auto md:h-16 bg-[#FFFEFB] border-b border-ink-200 px-3 sm:px-4 md:px-6 py-2 md:py-0 flex items-center justify-between gap-2 sticky top-0 z-10 shrink-0">

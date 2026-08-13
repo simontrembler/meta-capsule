@@ -7,12 +7,13 @@ import type {
   MediaAttachment,
   AdTargeting
 } from './models';
-import type { FileSystemFileHandle } from '../types/file-system-access';
+import type { FileSystemHandle } from '../types/file-system-access';
 
 export interface StoredFileHandle {
   id: string;
   fileName: string;
-  handle: FileSystemFileHandle;
+  kind?: 'file' | 'directory';
+  handle: FileSystemHandle;
 }
 
 export class MetaArchiveDatabase extends Dexie {

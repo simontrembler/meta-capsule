@@ -1,11 +1,13 @@
-import type { Entry } from '@zip.js/zip.js';
-import { ZipReader, BlobReader, TextWriter, configure } from '@zip.js/zip.js';
 import { db } from '../db/db';
 import { decodeMetaObj } from '../utils/metaDecoder';
+import {
+  entriesFromDirectory,
+  entriesFromFileList,
+  entriesFromZip,
+  type ArchiveEntry
+} from '../utils/archiveEntries';
 import type { Message, Post, MediaAttachment, MediaSource } from '../db/models';
-
-// Disable nested workers inside our ingestion worker for maximum compatibility
-configure({ useWebWorkers: false });
+import type { FileSystemDirectoryHandle } from '../types/file-system-access';
 
 function normalizePath(p: string): string {
   return p.replace(/\\/g, '/').replace(/^\.\//, '');
@@ -80,7 +82,7 @@ function toEpochMs(value: unknown): number | null {
  */
 function detectPlatformQuick(
   fileName: string,
-  entries: Entry[]
+  entries: ArchiveEntry[]
 ): 'facebook' | 'instagram' {
   const lowerName = fileName.toLowerCase();
 
@@ -124,16 +126,34 @@ function detectPlatformQuick(
 }
 
 self.onmessage = async (event: MessageEvent) => {
-  const { type, file } = event.data;
+  const { type, source, file, directoryHandle, files, archiveName } = event.data as {
+    type: string;
+    source?: 'zip' | 'directory' | 'files';
+    file?: File;
+    directoryHandle?: FileSystemDirectoryHandle;
+    files?: File[];
+    archiveName?: string;
+  };
 
   if (type !== 'START') return;
 
   try {
-    const zipReader = new ZipReader(new BlobReader(file));
-    const entries = await zipReader.getEntries();
+    let entries: ArchiveEntry[];
+    const displayName = archiveName || file?.name || directoryHandle?.name || 'archive';
+
+    if (source === 'directory' && directoryHandle) {
+      entries = await entriesFromDirectory(directoryHandle);
+    } else if (source === 'files' && files && files.length > 0) {
+      entries = entriesFromFileList(files);
+    } else if (file) {
+      entries = await entriesFromZip(file);
+    } else {
+      throw new Error("Aucune archive à lire (ZIP ou dossier).");
+    }
+
     const totalEntries = entries.length;
 
-    const detectedPlatform = detectPlatformQuick(file.name || '', entries);
+    const detectedPlatform = detectPlatformQuick(displayName, entries);
 
     postMessage({
       type: 'PROGRESS',
@@ -251,7 +271,7 @@ self.onmessage = async (event: MessageEvent) => {
         continue;
       }
 
-      const text = await (entry as Entry & { getData: Function }).getData(new TextWriter());
+      const text = await entry.getText();
       const rawData = JSON.parse(text);
       const data = decodeMetaObj(rawData);
 
@@ -318,7 +338,7 @@ self.onmessage = async (event: MessageEvent) => {
 
     // Fill IG username from ZIP name when needed — do not flip platform
     if (platform === 'instagram' && !profileDraft.username) {
-      const fromZip = String(file?.name || '').match(/^instagram-([^/\\]+?)-\d{4}/i);
+      const fromZip = String(displayName || '').match(/^instagram-([^/\\]+?)-\d{4}/i);
       if (fromZip?.[1]) {
         profileDraft.username = fromZip[1];
       }
@@ -494,7 +514,7 @@ self.onmessage = async (event: MessageEvent) => {
           (lowerFilename.includes('messages/inbox/') || lowerFilename.includes('messages/message_requests/')) &&
           lowerFilename.includes('message_')
         ) {
-          const text = await (entry as Entry & { getData: Function }).getData(new TextWriter());
+          const text = await entry.getText();
           const rawData = JSON.parse(text);
           const data = decodeMetaObj(rawData);
 
@@ -584,7 +604,7 @@ self.onmessage = async (event: MessageEvent) => {
             lowerFilename.includes('posts/media.json') ||
             lowerFilename.endsWith('/media.json'))
         ) {
-          const text = await (entry as Entry & { getData: Function }).getData(new TextWriter());
+          const text = await entry.getText();
           const rawData = JSON.parse(text);
           const data = decodeMetaObj(rawData);
           const defaultType: 'post' | 'story' = lowerFilename.includes('stor') ? 'story' : 'post';
@@ -597,7 +617,7 @@ self.onmessage = async (event: MessageEvent) => {
 
         // C. Facebook Posts
         else if (platform === 'facebook' && lowerFilename.includes('posts/your_posts')) {
-          const text = await (entry as Entry & { getData: Function }).getData(new TextWriter());
+          const text = await entry.getText();
           const rawData = JSON.parse(text);
           const data = decodeMetaObj(rawData);
 
@@ -644,7 +664,7 @@ self.onmessage = async (event: MessageEvent) => {
           lowerFilename.includes('ads_interests.json') ||
           lowerFilename.includes('advertisers_who_uploaded_a_contact_list')
         ) {
-          const text = await (entry as Entry & { getData: Function }).getData(new TextWriter());
+          const text = await entry.getText();
           const rawData = JSON.parse(text);
           const data = decodeMetaObj(rawData);
 
@@ -736,7 +756,6 @@ self.onmessage = async (event: MessageEvent) => {
     }
 
     await flushBatches();
-    await zipReader.close();
 
     postMessage({
       type: 'COMPLETE',
