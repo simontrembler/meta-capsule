@@ -6,6 +6,17 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-14
+
+### Ajouté
+- Liste des lieux visités (points GPS regroupés, noms Nominatim) sur la synthèse et la carte galerie
+
+### Changé
+- Copy confidentialité / réseau : les centroïdes GPS agrégés partent vers Nominatim pour nommer les lieux (les photos restent locales)
+
+### Corrigé
+- Clic d’un pin : la lightbox galerie passait derrière la carte Leaflet
+
 ## [1.2.0] - 2026-08-13
 
 ### Ajouté
