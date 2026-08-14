@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useArchive } from '../context/ArchiveContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db/db';
-import type { Conversation, MediaAttachment, Message, UserProfile } from '../db/models';
-import { MessageSquare, Image, Award, User, Mail, Phone, ArrowRight, MapPin } from 'lucide-react';
+import type { Conversation, MediaAttachment, MediaSource, UserProfile } from '../db/models';
+import { MessageSquare, Image, Award, User, Mail, Phone, ArrowRight, MapPin, Film, Mic } from 'lucide-react';
 import { ProfileAvatar } from './ProfileAvatar';
 import { PlacesMap, hasGpsCoords } from './PlacesMap';
 import { VisitedPlacesList } from './VisitedPlacesList';
 import { useVisitedPlaces } from '../hooks/useVisitedPlaces';
-import { loadOnThisDay, loadTopConversations } from '../utils/memories';
+import { loadOnThisDay, loadTopConversations, type OnThisDayItem } from '../utils/memories';
+import { getMediaBlobUrl, type MediaArchiveSource } from '../utils/zipMediaResolver';
+import type { TranslationKey } from '../i18n';
 
 interface DashboardStats {
   totalMessages: number;
@@ -18,16 +20,91 @@ interface DashboardStats {
   activityData: Array<{ year: string; count: number }>;
 }
 
+function yearsAgoLabel(
+  timestamp: number,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string
+): string {
+  const years = new Date().getFullYear() - new Date(timestamp).getFullYear();
+  return years > 0 ? t('dashboard.yearsAgo', { count: years }) : String(new Date(timestamp).getFullYear());
+}
+
+function mediaTypeLabel(
+  type: MediaAttachment['type'],
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string
+): string {
+  if (type === 'video') return t('dashboard.onThisDayVideo');
+  if (type === 'audio') return t('gallery.voice');
+  return t('dashboard.onThisDayPhoto');
+}
+
+function mediaSourceKey(source: MediaSource | undefined): TranslationKey {
+  switch (source) {
+    case 'post':
+      return 'gallery.sourceLabel.post';
+    case 'story':
+      return 'gallery.sourceLabel.story';
+    case 'message':
+      return 'gallery.sourceLabel.message';
+    default:
+      return 'gallery.sourceLabel.other';
+  }
+}
+
+const OnThisDayMediaThumb: React.FC<{
+  item: MediaAttachment;
+  archiveSource: MediaArchiveSource | null;
+}> = ({ item, archiveSource }) => {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!archiveSource || item.type === 'audio') return;
+    let mounted = true;
+    void getMediaBlobUrl(archiveSource, item.relativePath)
+      .then((url) => {
+        if (mounted) setBlobUrl(url);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [archiveSource, item.relativePath, item.type]);
+
+  const shell =
+    'w-12 h-12 shrink-0 overflow-hidden rounded-md border border-ink-200 bg-ink-100';
+
+  if (item.type === 'audio') {
+    return (
+      <div className={`${shell} flex items-center justify-center text-ink-600`}>
+        <Mic size={18} />
+      </div>
+    );
+  }
+
+  if (blobUrl && item.type === 'video') {
+    return (
+      <div className={`${shell} relative bg-ink-950`}>
+        <video src={blobUrl} muted playsInline className="h-full w-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+          <Film size={14} className="text-white" />
+        </div>
+      </div>
+    );
+  }
+
+  if (blobUrl) {
+    return <img src={blobUrl} alt="" className={`${shell} object-cover`} />;
+  }
+
+  return <div className={shell} />;
+};
+
 export const DashboardModule: React.FC = () => {
-  const { stats, setActiveTab, getArchiveSource, openConversation, openGalleryMap } = useArchive();
+  const { stats, setActiveTab, getArchiveSource, openConversation, openGalleryMap, openMedia } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [dbStats, setDbStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [onThisDay, setOnThisDay] = useState<{ messages: Message[]; media: MediaAttachment[] }>({
-    messages: [],
-    media: []
-  });
+  const [onThisDay, setOnThisDay] = useState<OnThisDayItem[]>([]);
   const [topChats, setTopChats] = useState<Conversation[]>([]);
   const [placesMedia, setPlacesMedia] = useState<MediaAttachment[]>([]);
   const [placesCount, setPlacesCount] = useState(0);
@@ -175,7 +252,7 @@ export const DashboardModule: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <button
           type="button"
           onClick={() => setActiveTab('messages')}
@@ -215,6 +292,21 @@ export const DashboardModule: React.FC = () => {
             <h3 className="font-display text-2xl font-semibold text-ink-950">{dbStats.totalPosts.toLocaleString(dateLocale)}</h3>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => openGalleryMap()}
+          className="bg-white p-5 border border-ink-200 rounded-md flex items-center gap-4 hover:border-brand-500 hover:bg-brand-50 transition-colors text-left group"
+        >
+          <div className="w-10 h-10 border border-ink-200 text-ink-600 flex items-center justify-center shrink-0 group-hover:border-brand-400 group-hover:text-brand-600 transition-colors">
+            <MapPin size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-ink-400 font-semibold uppercase tracking-wider mb-0.5">{t('dashboard.places')}</p>
+            <h3 className="font-display text-2xl font-semibold text-ink-950">{visitedPlaces.length.toLocaleString(dateLocale)}</h3>
+          </div>
+          <ArrowRight size={16} className="text-ink-300 group-hover:text-brand-600 shrink-0 transition-colors" />
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -363,23 +455,53 @@ export const DashboardModule: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white p-6 border border-ink-200 rounded-md">
           <h3 className="font-display text-lg font-semibold text-ink-950 mb-1">{t('dashboard.onThisDay')}</h3>
-          {onThisDay.messages.length === 0 && onThisDay.media.length === 0 ? (
+          {onThisDay.length === 0 ? (
             <p className="text-sm text-ink-400 mt-3">{t('dashboard.onThisDayEmpty')}</p>
           ) : (
             <ul className="mt-4 space-y-3">
-              {onThisDay.messages.slice(0, 5).map((msg) => {
-                const years = new Date().getFullYear() - new Date(msg.timestamp).getFullYear();
+              {onThisDay.map((item) => {
+                if (item.kind === 'message') {
+                  const msg = item.message;
+                  return (
+                    <li key={msg.id}>
+                      <button
+                        type="button"
+                        onClick={() => openConversation(msg.conversationId, msg.id)}
+                        className="w-full text-left"
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-700">
+                          {yearsAgoLabel(msg.timestamp, t)}
+                        </p>
+                        <p className="text-[11px] font-semibold text-ink-500 mt-0.5">
+                          {msg.isFromUser ? t('dashboard.you') : msg.senderName}
+                        </p>
+                        <p className="text-sm text-ink-800 line-clamp-2 mt-0.5">{msg.content}</p>
+                      </button>
+                    </li>
+                  );
+                }
+
+                const media = item.media;
                 return (
-                  <li key={msg.id}>
+                  <li key={media.id}>
                     <button
                       type="button"
-                      onClick={() => openConversation(msg.conversationId, msg.id)}
-                      className="w-full text-left"
+                      onClick={() => openMedia(media.id)}
+                      className="w-full flex items-center gap-3 text-left"
                     >
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-700">
-                        {years > 0 ? t('dashboard.yearsAgo', { count: years }) : new Date(msg.timestamp).getFullYear()}
-                      </p>
-                      <p className="text-sm text-ink-800 line-clamp-2 mt-0.5">{msg.content}</p>
+                      <OnThisDayMediaThumb
+                        item={media}
+                        archiveSource={getArchiveSource(media.platform)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-700">
+                          {yearsAgoLabel(media.timestamp, t)}
+                        </p>
+                        <p className="text-sm text-ink-800 mt-0.5">
+                          {mediaTypeLabel(media.type, t)}
+                          <span className="text-ink-400"> · {t(mediaSourceKey(media.source))}</span>
+                        </p>
+                      </div>
                     </button>
                   </li>
                 );

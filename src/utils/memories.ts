@@ -10,27 +10,60 @@ export function todayMonthDayKey(now = new Date()): string {
   return `${now.getMonth() + 1}-${now.getDate()}`;
 }
 
-export async function loadOnThisDay(limit = 12): Promise<{
-  messages: Message[];
-  media: MediaAttachment[];
-}> {
+export type OnThisDayItem =
+  | { kind: 'message'; timestamp: number; message: Message }
+  | { kind: 'media'; timestamp: number; media: MediaAttachment };
+
+function pathTail(path: string): string {
+  const parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
+  return parts.slice(-3).join('/').toLowerCase();
+}
+
+const MEMORY_MEDIA_TYPES = new Set(['photo', 'video', 'audio']);
+
+export async function loadOnThisDay(limit = 12): Promise<OnThisDayItem[]> {
   const key = todayMonthDayKey();
   const [allMessages, allMedia] = await Promise.all([
     db.messages.toArray(),
     db.media.toArray()
   ]);
 
-  const messages = allMessages
-    .filter((msg) => monthDayKey(msg.timestamp) === key && msg.content)
+  const messages = allMessages.filter(
+    (msg) => monthDayKey(msg.timestamp) === key && msg.content
+  );
+
+  const attachmentTails = new Set<string>();
+  for (const msg of messages) {
+    for (const att of msg.attachments || []) {
+      attachmentTails.add(pathTail(att.relativePath));
+    }
+  }
+
+  const media = allMedia.filter(
+    (item) =>
+      monthDayKey(item.timestamp) === key &&
+      MEMORY_MEDIA_TYPES.has(item.type) &&
+      !attachmentTails.has(pathTail(item.relativePath))
+  );
+
+  return [
+    ...messages.map(
+      (message): OnThisDayItem => ({
+        kind: 'message',
+        timestamp: message.timestamp,
+        message
+      })
+    ),
+    ...media.map(
+      (item): OnThisDayItem => ({
+        kind: 'media',
+        timestamp: item.timestamp,
+        media: item
+      })
+    )
+  ]
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, limit);
-
-  const media = allMedia
-    .filter((item) => monthDayKey(item.timestamp) === key && item.type === 'photo')
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, limit);
-
-  return { messages, media };
 }
 
 export async function loadTopConversations(limit = 8): Promise<Conversation[]> {
