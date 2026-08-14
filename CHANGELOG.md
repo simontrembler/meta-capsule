@@ -6,6 +6,18 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-14
+
+### Ajouté
+- Carte synthèse « Lieux visités » (nombre de clusters GPS)
+- Ce jour-là : nom de l’expéditeur, plus photos / vidéos / vocaux du calendrier
+
+### Changé
+- Vérification du service worker quand l’onglet redevient visible
+
+### Corrigé
+- Galerie : plus de relance d’extraction du ZIP à chaque tuile (spinners infinis / crash Chrome)
+
 ## [1.3.0] - 2026-08-14
 
 ### Ajouté
