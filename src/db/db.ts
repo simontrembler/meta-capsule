@@ -5,7 +5,8 @@ import type {
   Message,
   Post,
   MediaAttachment,
-  AdTargeting
+  AdTargeting,
+  GeocodeCacheEntry
 } from './models';
 import type { FileSystemHandle } from '../types/file-system-access';
 
@@ -24,6 +25,7 @@ export class MetaArchiveDatabase extends Dexie {
   media!: Table<MediaAttachment, string>;
   adTargeting!: Table<AdTargeting, string>;
   fileHandles!: Table<StoredFileHandle, string>;
+  geocodeCache!: Table<GeocodeCacheEntry, string>;
 
   constructor() {
     super('MetaArchiveViewerDB');
@@ -50,6 +52,11 @@ export class MetaArchiveDatabase extends Dexie {
     // Optional GPS from export EXIF (latitude/longitude on MediaAttachment; same indexes)
     this.version(4).stores({
       media: 'id, platform, relativePath, type, source, timestamp, [source+timestamp]'
+    });
+
+    // Nominatim reverse-geocode cache (cluster cell id → place label)
+    this.version(5).stores({
+      geocodeCache: 'id'
     });
   }
 
@@ -87,7 +94,8 @@ export class MetaArchiveDatabase extends Dexie {
   async clearAll() {
     await Promise.all([
       this.clearArchiveData(),
-      this.fileHandles.clear()
+      this.fileHandles.clear(),
+      this.geocodeCache.clear()
     ]);
   }
 }

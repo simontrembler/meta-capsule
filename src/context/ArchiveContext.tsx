@@ -110,12 +110,14 @@ interface ArchiveContextType {
   requestedMediaId: string | null;
   /** When set, gallery opens in map view (cleared by GalleryModule). */
   requestedGalleryView: 'grid' | 'map' | null;
+  requestedMapFocus: { latitude: number; longitude: number; placeId?: string } | null;
   openConversation: (id: string, messageId?: string) => void;
   openMedia: (id: string) => void;
-  openGalleryMap: () => void;
+  openGalleryMap: (focus?: { latitude: number; longitude: number; placeId?: string }) => void;
   clearRequestedConversation: () => void;
   clearRequestedMedia: () => void;
   clearRequestedGalleryView: () => void;
+  clearRequestedMapFocus: () => void;
 }
 
 const ArchiveContext = createContext<ArchiveContextType | undefined>(undefined);
@@ -143,6 +145,11 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [requestedMessageId, setRequestedMessageId] = useState<string | null>(null);
   const [requestedMediaId, setRequestedMediaId] = useState<string | null>(null);
   const [requestedGalleryView, setRequestedGalleryView] = useState<'grid' | 'map' | null>(null);
+  const [requestedMapFocus, setRequestedMapFocus] = useState<{
+    latitude: number;
+    longitude: number;
+    placeId?: string;
+  } | null>(null);
   const [supportsFileSystemAccess] = useState(() => isFileSystemAccessSupported());
   const [supportsDirectoryPicker] = useState(() => isDirectoryPickerSupported());
 
@@ -825,10 +832,14 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setActiveTab('gallery');
   }, []);
 
-  const openGalleryMap = useCallback(() => {
-    setRequestedGalleryView('map');
-    setActiveTab('gallery');
-  }, []);
+  const openGalleryMap = useCallback(
+    (focus?: { latitude: number; longitude: number; placeId?: string }) => {
+      setRequestedGalleryView('map');
+      setRequestedMapFocus(focus ?? null);
+      setActiveTab('gallery');
+    },
+    []
+  );
 
   const clearRequestedMedia = useCallback(() => {
     setRequestedMediaId(null);
@@ -836,6 +847,10 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const clearRequestedGalleryView = useCallback(() => {
     setRequestedGalleryView(null);
+  }, []);
+
+  const clearRequestedMapFocus = useCallback(() => {
+    setRequestedMapFocus(null);
   }, []);
 
   const resetArchive = useCallback(async () => {
@@ -925,12 +940,14 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         requestedMessageId,
         requestedMediaId,
         requestedGalleryView,
+        requestedMapFocus,
         openConversation,
         openMedia,
         openGalleryMap,
         clearRequestedConversation,
         clearRequestedMedia,
-        clearRequestedGalleryView
+        clearRequestedGalleryView,
+        clearRequestedMapFocus
       }}
     >
       {children}

@@ -78,6 +78,13 @@ export interface MediaAttachment {
   longitude?: number;
 }
 
+export interface GeocodeCacheEntry {
+  /** Grid cell id, e.g. "15123,-24667" */
+  id: string;
+  label: string;
+  fetchedAt: number;
+}
+
 export interface AdTargeting {
   id: string; // e.g. "facebook:ad_data"
   platform: 'facebook' | 'instagram';

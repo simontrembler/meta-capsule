@@ -94,7 +94,7 @@ export const fr = {
 
   // Settings
   'settings.privacyTitle': 'Sécurité et Confidentialité',
-  'settings.privacyBody': "Meta Capsule est conçu pour garantir une confidentialité absolue. Toutes vos données sont stockées localement dans la base de données IndexedDB de votre navigateur et ne sont jamais transmises à un serveur externe.",
+  'settings.privacyBody': "Votre archive reste dans l’IndexedDB de ce navigateur et n’est jamais envoyée à Meta Capsule. La carte charge des tuiles OpenStreetMap, et nommer les lieux visités envoie des centroïdes GPS agrégés (pas les photos) à Nominatim/OSM.",
   'settings.storage': 'Emplacement de stockage :',
   'settings.storageValue': 'IndexedDB (Local)',
   'settings.zipAccess': 'Accès archive :',
@@ -102,7 +102,7 @@ export const fr = {
   'settings.telemetry': 'Télémétrie :',
   'settings.telemetryValue': 'Désactivée',
   'settings.internet': 'Accès Internet :',
-  'settings.internetValue': "Non requis (l'application fonctionne hors-ligne)",
+  'settings.internetValue': 'Optionnel — tuiles OSM et noms Nominatim nécessitent le réseau',
   'settings.appearanceTitle': 'Apparence',
   'settings.pwaTitle': 'Application installable',
   'settings.pwaBody': 'Meta Capsule peut s’installer comme PWA. Le navigateur met en cache l’interface, jamais vos archives ZIP ou IndexedDB.',
@@ -165,6 +165,11 @@ export const fr = {
   'dashboard.placesEmpty': 'Aucune coordonnée GPS dans cet export — souvent absentes hors EXIF stories/posts.',
   'dashboard.placesOpen': 'Voir la carte ({count})',
 
+  'places.listTitle': 'Lieux visités ({count})',
+  'places.mediaCount': '{count} médias',
+  'places.naming': 'Nommer les lieux…',
+  'places.unnamed': 'Près de {coords}',
+
   // Messaging
   'messages.searchContact': 'Rechercher un contact...',
   'messages.searchInChat': 'Rechercher dans ce chat...',
@@ -219,8 +224,8 @@ export const fr = {
 
   'map.emptyTitle': 'Aucun lieu à afficher',
   'map.emptyHint': 'Aucune coordonnée GPS dans les médias filtrés. Réimportez une archive avec EXIF, ou élargissez les filtres.',
-  'map.tilesHint': 'Fond de carte OpenStreetMap (réseau requis). Vos points GPS restent locaux — rien n’est envoyé à Meta Capsule.',
-  'map.tilesHintShort': 'Tuiles OSM · réseau · points locaux',
+  'map.tilesHint': 'Tuiles OpenStreetMap et noms Nominatim (réseau). Les photos restent locales ; seuls des centroïdes GPS agrégés partent vers OSM, jamais vers Meta Capsule.',
+  'map.tilesHintShort': 'Tuiles OSM + Nominatim · centroïdes seulement',
 
   // Ads
   'ads.loading': 'Chargement des données publicitaires...',

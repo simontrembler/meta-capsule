@@ -2,19 +2,15 @@ import React, { useEffect, useMemo } from 'react';
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import type { MediaAttachment } from '../db/models';
 import { useLanguage } from '../context/LanguageContext';
+import { hasGpsCoords } from '../utils/places';
 import 'leaflet/dist/leaflet.css';
 
-export function hasGpsCoords(
-  item: MediaAttachment
-): item is MediaAttachment & { latitude: number; longitude: number } {
-  return (
-    typeof item.latitude === 'number' &&
-    typeof item.longitude === 'number' &&
-    Number.isFinite(item.latitude) &&
-    Number.isFinite(item.longitude) &&
-    !(item.latitude === 0 && item.longitude === 0)
-  );
-}
+export { hasGpsCoords };
+
+export type MapFocus = {
+  latitude: number;
+  longitude: number;
+};
 
 type PlacesMapProps = {
   items: MediaAttachment[];
@@ -22,18 +18,37 @@ type PlacesMapProps = {
   /** Compact preview (dashboard) — no popups, lighter chrome */
   compact?: boolean;
   onSelect?: (item: MediaAttachment) => void;
+  focus?: MapFocus | null;
 };
 
-function FitToPoints({ positions }: { positions: [number, number][] }) {
+function FitToPoints({
+  positions,
+  hasFocus
+}: {
+  positions: [number, number][];
+  hasFocus: boolean;
+}) {
   const map = useMap();
   useEffect(() => {
-    if (positions.length === 0) return;
+    if (hasFocus || positions.length === 0) return;
     if (positions.length === 1) {
       map.setView(positions[0], 11);
       return;
     }
     map.fitBounds(positions, { padding: [28, 28], maxZoom: 13 });
-  }, [map, positions]);
+  }, [map, positions, hasFocus]);
+  return null;
+}
+
+function FlyToFocus({ focus }: { focus: MapFocus | null | undefined }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!focus) return;
+    const id = window.setTimeout(() => {
+      map.flyTo([focus.latitude, focus.longitude], 14, { duration: 0.65 });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [map, focus]);
   return null;
 }
 
@@ -41,7 +56,8 @@ export const PlacesMap: React.FC<PlacesMapProps> = ({
   items,
   className = '',
   compact = false,
-  onSelect
+  onSelect,
+  focus
 }) => {
   const { t, dateLocale } = useLanguage();
 
@@ -62,10 +78,10 @@ export const PlacesMap: React.FC<PlacesMapProps> = ({
     );
   }
 
-  const center = positions[0];
+  const center = focus ? ([focus.latitude, focus.longitude] as [number, number]) : positions[0];
 
   return (
-    <div className={`relative flex flex-col overflow-hidden border border-ink-200 bg-white ${className}`}>
+    <div className={`relative z-0 isolate flex flex-col overflow-hidden border border-ink-200 bg-white ${className}`}>
       {!compact && (
         <p className="shrink-0 border-b border-ink-100 bg-ink-50/90 px-3 py-2 text-[11px] leading-relaxed text-ink-500">
           {t('map.tilesHint')}
@@ -73,7 +89,7 @@ export const PlacesMap: React.FC<PlacesMapProps> = ({
       )}
       <MapContainer
         center={center}
-        zoom={3}
+        zoom={focus ? 14 : 3}
         scrollWheelZoom={!compact}
         dragging={!compact || geotagged.length > 0}
         className={compact ? 'h-40 w-full' : 'h-full min-h-[280px] w-full flex-1'}
@@ -83,7 +99,8 @@ export const PlacesMap: React.FC<PlacesMapProps> = ({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitToPoints positions={positions} />
+        <FitToPoints positions={positions} hasFocus={Boolean(focus)} />
+        <FlyToFocus focus={focus} />
         {geotagged.map((item) => (
           <CircleMarker
             key={item.id}

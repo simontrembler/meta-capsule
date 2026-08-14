@@ -93,7 +93,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Settings
   'settings.privacyTitle': 'Security & Privacy',
-  'settings.privacyBody': 'Meta Capsule is built for absolute privacy. All your data is stored locally in your browser’s IndexedDB and is never sent to an external server.',
+  'settings.privacyBody': 'Your archive stays in this browser’s IndexedDB and is never uploaded to Meta Capsule. The map loads OpenStreetMap tiles, and naming visited places sends aggregated GPS centroids (not photos) to Nominatim/OSM.',
   'settings.storage': 'Storage location:',
   'settings.storageValue': 'IndexedDB (Local)',
   'settings.zipAccess': 'Archive access:',
@@ -101,7 +101,7 @@ export const en: Record<TranslationKey, string> = {
   'settings.telemetry': 'Telemetry:',
   'settings.telemetryValue': 'Disabled',
   'settings.internet': 'Internet access:',
-  'settings.internetValue': 'Not required (the app works offline)',
+  'settings.internetValue': 'Optional — OSM map tiles and Nominatim place names need a network',
   'settings.appearanceTitle': 'Appearance',
   'settings.pwaTitle': 'Installable app',
   'settings.pwaBody': 'Meta Capsule can be installed as a PWA. The browser caches the interface, never your ZIP archives or IndexedDB.',
@@ -164,6 +164,11 @@ export const en: Record<TranslationKey, string> = {
   'dashboard.placesEmpty': 'No GPS coordinates in this export — often missing outside story/post EXIF.',
   'dashboard.placesOpen': 'Open the map ({count})',
 
+  'places.listTitle': 'Visited places ({count})',
+  'places.mediaCount': '{count} media',
+  'places.naming': 'Naming places…',
+  'places.unnamed': 'Near {coords}',
+
   // Messaging
   'messages.searchContact': 'Search a contact...',
   'messages.searchInChat': 'Search in this chat...',
@@ -218,8 +223,8 @@ export const en: Record<TranslationKey, string> = {
 
   'map.emptyTitle': 'No places to show',
   'map.emptyHint': 'No GPS coordinates in the filtered media. Re-import an archive with EXIF, or widen filters.',
-  'map.tilesHint': 'OpenStreetMap basemap (network required). Your GPS points stay local — nothing is sent to Meta Capsule.',
-  'map.tilesHintShort': 'OSM tiles · network · local points',
+  'map.tilesHint': 'OpenStreetMap tiles and Nominatim place names (network). Photos stay local; only aggregated GPS centroids are sent to OSM, never to Meta Capsule.',
+  'map.tilesHintShort': 'OSM tiles + Nominatim · centroids only',
 
   // Ads
   'ads.loading': 'Loading advertising data...',
