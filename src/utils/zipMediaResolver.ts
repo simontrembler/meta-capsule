@@ -7,6 +7,62 @@ export type MediaArchiveSource =
   | { kind: 'files'; map: Map<string, File>; name: string };
 
 const blobUrlCache = new Map<string, string>();
+const inflightUrls = new Map<string, Promise<string>>();
+const zipSessions = new Map<File, Promise<ZipSession>>();
+const ZIP_EXTRACT_CONCURRENCY = 3;
+let zipSlots = 0;
+const zipSlotWaiters: Array<() => void> = [];
+
+type ZipEntry = { filename: string; getData: (w: unknown) => Promise<Blob> };
+
+type ZipSession = {
+  reader: ZipReader<BlobReader>;
+  byName: Map<string, ZipEntry>;
+  byNameLower: Map<string, ZipEntry>;
+  byBase: Map<string, ZipEntry>;
+};
+
+async function acquireZipSlot(): Promise<void> {
+  if (zipSlots < ZIP_EXTRACT_CONCURRENCY) {
+    zipSlots += 1;
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    zipSlotWaiters.push(() => {
+      zipSlots += 1;
+      resolve();
+    });
+  });
+}
+
+function releaseZipSlot(): void {
+  zipSlots -= 1;
+  const next = zipSlotWaiters.shift();
+  if (next) next();
+}
+
+async function getZipSession(file: File): Promise<ZipSession> {
+  let pending = zipSessions.get(file);
+  if (!pending) {
+    pending = (async () => {
+      const reader = new ZipReader(new BlobReader(file));
+      const entries = (await reader.getEntries()) as ZipEntry[];
+      const byName = new Map<string, ZipEntry>();
+      const byNameLower = new Map<string, ZipEntry>();
+      const byBase = new Map<string, ZipEntry>();
+      for (const entry of entries) {
+        byName.set(entry.filename, entry);
+        const lower = entry.filename.toLowerCase();
+        if (!byNameLower.has(lower)) byNameLower.set(lower, entry);
+        const base = entry.filename.split('/').pop();
+        if (base && !byBase.has(base)) byBase.set(base, entry);
+      }
+      return { reader, byName, byNameLower, byBase };
+    })();
+    zipSessions.set(file, pending);
+  }
+  return pending;
+}
 
 function normalizePath(relativePath: string): string {
   return relativePath.replace(/\\/g, '/').replace(/^\//, '');
@@ -88,33 +144,23 @@ async function getFileByPath(
 
 async function blobFromZip(file: File, relativePath: string): Promise<Blob> {
   const normalizedPath = normalizePath(relativePath);
-  const zipReader = new ZipReader(new BlobReader(file));
+  const session = await getZipSession(file);
+  const lastSegment = normalizedPath.split('/').pop();
+  const entry =
+    session.byName.get(normalizedPath) ||
+    session.byNameLower.get(normalizedPath.toLowerCase()) ||
+    (lastSegment ? session.byBase.get(lastSegment) : undefined);
+
+  if (!entry) {
+    throw new Error(`Fichier non trouvé dans l'archive : ${relativePath}`);
+  }
+
+  await acquireZipSlot();
   try {
-    const entries = await zipReader.getEntries();
-    let entry = entries.find((e) => e.filename === normalizedPath);
-
-    if (!entry) {
-      const lowerPath = normalizedPath.toLowerCase();
-      entry = entries.find((e) => e.filename.toLowerCase() === lowerPath);
-    }
-
-    if (!entry) {
-      const lastSegment = normalizedPath.split('/').pop();
-      if (lastSegment) {
-        entry = entries.find((e) => e.filename.endsWith(lastSegment));
-      }
-    }
-
-    if (!entry) {
-      throw new Error(`Fichier non trouvé dans l'archive : ${relativePath}`);
-    }
-
-    const raw = await (entry as { getData: (w: unknown) => Promise<Blob> }).getData(
-      new BlobWriter(mimeFromPath(normalizedPath))
-    );
+    const raw = await entry.getData(new BlobWriter(mimeFromPath(normalizedPath)));
     return withMimeType(raw, normalizedPath);
   } finally {
-    await zipReader.close();
+    releaseZipSlot();
   }
 }
 
@@ -177,19 +223,33 @@ export async function getMediaBlobUrl(
     return blobUrlCache.get(key)!;
   }
 
-  let blob: Blob;
-  if (resolved.kind === 'zip') {
-    blob = await blobFromZip(resolved.file, normalizedPath);
-  } else if (resolved.kind === 'directory') {
-    blob = await blobFromDirectory(resolved.root, normalizedPath);
-  } else {
-    blob = blobFromFileMap(resolved.map, normalizedPath);
+  const pending = inflightUrls.get(key);
+  if (pending) {
+    return pending;
   }
-  blob = withMimeType(blob, normalizedPath);
 
-  const blobUrl = URL.createObjectURL(blob);
-  blobUrlCache.set(key, blobUrl);
-  return blobUrl;
+  const work = (async () => {
+    let blob: Blob;
+    if (resolved.kind === 'zip') {
+      blob = await blobFromZip(resolved.file, normalizedPath);
+    } else if (resolved.kind === 'directory') {
+      blob = await blobFromDirectory(resolved.root, normalizedPath);
+    } else {
+      blob = blobFromFileMap(resolved.map, normalizedPath);
+    }
+    blob = withMimeType(blob, normalizedPath);
+
+    const blobUrl = URL.createObjectURL(blob);
+    blobUrlCache.set(key, blobUrl);
+    return blobUrl;
+  })();
+
+  inflightUrls.set(key, work);
+  try {
+    return await work;
+  } finally {
+    inflightUrls.delete(key);
+  }
 }
 
 export async function getMediaBlob(
@@ -209,6 +269,11 @@ export function revokeAllMediaUrls() {
     URL.revokeObjectURL(url);
   }
   blobUrlCache.clear();
+  inflightUrls.clear();
+  for (const pending of zipSessions.values()) {
+    void pending.then((session) => session.reader.close()).catch(() => {});
+  }
+  zipSessions.clear();
 }
 
 export function fileListToPathMap(files: File[]): Map<string, File> {

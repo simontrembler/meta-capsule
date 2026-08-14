@@ -111,6 +111,13 @@ function platformChipActiveClass(platform: 'facebook' | 'instagram'): string {
   return 'bg-gradient-to-tr from-amber-500 via-red-500 to-purple-600 text-white';
 }
 
+function archiveSourceKey(source: MediaArchiveSource | File | null): string {
+  if (!source) return '';
+  if (source instanceof File) return `zip:${source.name}`;
+  if (source.kind === 'zip') return `zip:${source.file.name}`;
+  return `${source.kind}:${source.name}`;
+}
+
 const GalleryItem: React.FC<{
   item: MediaAttachment;
   archiveSource: MediaArchiveSource | File | null;
@@ -141,14 +148,19 @@ const GalleryItem: React.FC<{
     return () => observer.disconnect();
   }, []);
 
+  const sourceKey = archiveSourceKey(archiveSource);
+  const sourceRef = useRef(archiveSource);
+  sourceRef.current = archiveSource;
+
   useEffect(() => {
-    if (!isVisible || !archiveSource) return;
+    const source = sourceRef.current;
+    if (!isVisible || !source) return;
 
     let isMounted = true;
     const resolveMedia = async () => {
       try {
         setIsLoading(true);
-        const url = await getMediaBlobUrl(archiveSource, item.relativePath);
+        const url = await getMediaBlobUrl(source, item.relativePath);
         if (isMounted) {
           setBlobUrl(url);
           setError(false);
@@ -165,7 +177,7 @@ const GalleryItem: React.FC<{
     return () => {
       isMounted = false;
     };
-  }, [isVisible, item.relativePath, archiveSource]);
+  }, [isVisible, item.relativePath, sourceKey]);
 
   return (
     <div
@@ -193,7 +205,7 @@ const GalleryItem: React.FC<{
         <img src={blobUrl} alt="Gallery" className="w-full h-full object-cover group-hover:opacity-90 transition-opacity" />
       ) : item.type === 'video' ? (
         <div className="w-full h-full relative bg-ink-950">
-          <video src={blobUrl} className="w-full h-full object-cover" muted playsInline />
+          <video src={blobUrl} className="w-full h-full object-cover" muted playsInline preload="none" />
           <div className="absolute inset-0 flex items-center justify-center bg-black/20">
             <div className="w-10 h-10 rounded-full bg-white/90 text-ink-800 flex items-center justify-center">
               <Film size={18} />

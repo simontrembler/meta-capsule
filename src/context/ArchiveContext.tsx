@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { db } from '../db/db';
 import { fileListToPathMap, revokeAllMediaUrls, type MediaArchiveSource } from '../utils/zipMediaResolver';
 import { archiveDisplayName } from '../utils/archiveEntries';
@@ -226,17 +226,34 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, []);
 
-  const getArchiveSource = useCallback(
-    (platform: ArchivePlatform): MediaArchiveSource | null => {
+  const archiveSources = useMemo(() => {
+    const out: Partial<Record<ArchivePlatform, MediaArchiveSource>> = {};
+    for (const platform of ['facebook', 'instagram'] as ArchivePlatform[]) {
       const zip = zipFiles[platform];
-      if (zip) return { kind: 'zip', file: zip };
+      if (zip) {
+        out[platform] = { kind: 'zip', file: zip };
+        continue;
+      }
       const dir = directoryHandles[platform];
-      if (dir) return { kind: 'directory', root: dir, name: zipNames[platform] || dir.name };
+      if (dir) {
+        out[platform] = {
+          kind: 'directory',
+          root: dir,
+          name: zipNames[platform] || dir.name
+        };
+        continue;
+      }
       const map = folderMaps[platform];
-      if (map) return { kind: 'files', map, name: zipNames[platform] || 'archive' };
-      return null;
-    },
-    [zipFiles, directoryHandles, folderMaps, zipNames]
+      if (map) {
+        out[platform] = { kind: 'files', map, name: zipNames[platform] || 'archive' };
+      }
+    }
+    return out;
+  }, [zipFiles, directoryHandles, folderMaps, zipNames]);
+
+  const getArchiveSource = useCallback(
+    (platform: ArchivePlatform): MediaArchiveSource | null => archiveSources[platform] ?? null,
+    [archiveSources]
   );
 
   const hasMediaAccess = useCallback(
