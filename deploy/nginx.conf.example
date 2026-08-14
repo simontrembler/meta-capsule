@@ -30,8 +30,25 @@ server {
         expires 1y;
     }
 
+    # Scanner probes: this host serves a static SPA only (no .env, PHP, WordPress).
+    # Regex locations are first-match; keep these before the SPA catch-all.
     location ~ /\. {
-        deny all;
+        return 404;
+    }
+
+    location ~* \.env {
+        return 404;
+    }
+
+    location ~* \.php {
+        return 404;
+    }
+
+    location ~* ^/(wp-admin|wp-login|wp-content|wp-includes|wp-json|wordpress|xmlrpc) {
+        return 404;
+    }
+
+    location ~* /(wlwmanifest\.xml|_profiler|actuator|phpinfo) {
         return 404;
     }
 
