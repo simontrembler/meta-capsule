@@ -20,7 +20,9 @@ import {
   LayoutGrid,
   Map as MapIcon
 } from 'lucide-react';
-import { PlacesMap, hasGpsCoords } from './PlacesMap';
+import { PlacesMap, hasGpsCoords, type MapFocus } from './PlacesMap';
+import { VisitedPlacesList } from './VisitedPlacesList';
+import { useVisitedPlaces } from '../hooks/useVisitedPlaces';
 
 type SourceFilter = 'all' | MediaSource;
 type TypeFilter = 'all' | 'photo' | 'video' | 'audio';
@@ -232,7 +234,9 @@ export const GalleryModule: React.FC = () => {
     requestedMediaId,
     clearRequestedMedia,
     requestedGalleryView,
-    clearRequestedGalleryView
+    clearRequestedGalleryView,
+    requestedMapFocus,
+    clearRequestedMapFocus
   } = useArchive();
   const { t, dateLocale } = useLanguage();
   const [allMedia, setAllMedia] = useState<MediaAttachment[]>([]);
@@ -242,6 +246,7 @@ export const GalleryModule: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [monthFilter, setMonthFilter] = useState<MonthFilter>('all');
   const [viewMode, setViewMode] = useState<GalleryViewMode>('grid');
+  const [mapFocus, setMapFocus] = useState<(MapFocus & { placeId?: string }) | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
   const pendingMediaId = useRef<string | null>(null);
@@ -251,6 +256,12 @@ export const GalleryModule: React.FC = () => {
     setViewMode(requestedGalleryView);
     clearRequestedGalleryView();
   }, [requestedGalleryView, clearRequestedGalleryView]);
+
+  useEffect(() => {
+    if (!requestedMapFocus) return;
+    setMapFocus(requestedMapFocus);
+    clearRequestedMapFocus();
+  }, [requestedMapFocus, clearRequestedMapFocus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -363,6 +374,9 @@ export const GalleryModule: React.FC = () => {
   const geotaggedItems = useMemo(
     () => filteredItems.filter(hasGpsCoords),
     [filteredItems]
+  );
+  const { places: visitedPlaces, namingRemaining } = useVisitedPlaces(
+    viewMode === 'map' ? geotaggedItems : []
   );
 
   const openLightbox = async (index: number) => {
@@ -522,17 +536,34 @@ export const GalleryModule: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto pr-2 space-y-8 min-h-0">
         {viewMode === 'map' ? (
-          <div className="h-full min-h-[360px] flex flex-col">
-            <div className="mb-2 flex items-center gap-2 text-ink-700">
-              <MapIcon size={16} className="text-brand-600" />
-              <span className="text-xs font-semibold">
-                {t('gallery.mapCount', { count: geotaggedItems.length })}
-              </span>
+          <div className="h-full min-h-[360px] flex flex-col lg:flex-row gap-3">
+            <div className="flex-1 min-h-[360px] min-w-0 flex flex-col">
+              <div className="mb-2 flex items-center gap-2 text-ink-700">
+                <MapIcon size={16} className="text-brand-600" />
+                <span className="text-xs font-semibold">
+                  {t('gallery.mapCount', { count: geotaggedItems.length })}
+                </span>
+              </div>
+              <PlacesMap
+                items={geotaggedItems}
+                className="min-h-[360px] flex-1 rounded-md"
+                focus={mapFocus}
+                onSelect={(item) => void openLightboxForItem(item)}
+              />
             </div>
-            <PlacesMap
-              items={geotaggedItems}
-              className="min-h-[360px] flex-1 rounded-md"
-              onSelect={(item) => void openLightboxForItem(item)}
+            <VisitedPlacesList
+              className="lg:w-72 shrink-0 flex flex-col min-h-0 lg:h-full"
+              listClassName="max-h-56 lg:max-h-none lg:flex-1"
+              places={visitedPlaces}
+              namingRemaining={namingRemaining}
+              selectedId={mapFocus?.placeId}
+              onSelect={(place) =>
+                setMapFocus({
+                  latitude: place.latitude,
+                  longitude: place.longitude,
+                  placeId: place.id
+                })
+              }
             />
           </div>
         ) : filteredItems.length > 0 ? (

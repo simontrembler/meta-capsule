@@ -6,6 +6,8 @@ import type { Conversation, MediaAttachment, Message, UserProfile } from '../db/
 import { MessageSquare, Image, Award, User, Mail, Phone, ArrowRight, MapPin } from 'lucide-react';
 import { ProfileAvatar } from './ProfileAvatar';
 import { PlacesMap, hasGpsCoords } from './PlacesMap';
+import { VisitedPlacesList } from './VisitedPlacesList';
+import { useVisitedPlaces } from '../hooks/useVisitedPlaces';
 import { loadOnThisDay, loadTopConversations } from '../utils/memories';
 
 interface DashboardStats {
@@ -29,6 +31,7 @@ export const DashboardModule: React.FC = () => {
   const [topChats, setTopChats] = useState<Conversation[]>([]);
   const [placesMedia, setPlacesMedia] = useState<MediaAttachment[]>([]);
   const [placesCount, setPlacesCount] = useState(0);
+  const { places: visitedPlaces, namingRemaining } = useVisitedPlaces(placesMedia);
 
   const primarySource = stats?.platform ? getArchiveSource(stats.platform) : null;
   const archiveName =
@@ -132,7 +135,7 @@ export const DashboardModule: React.FC = () => {
         setTopChats(chats);
         const geotagged = mediaRows.filter(hasGpsCoords);
         setPlacesCount(geotagged.length);
-        setPlacesMedia(geotagged.slice(0, 200));
+        setPlacesMedia(geotagged);
       }
     };
     void loadMemories();
@@ -397,7 +400,18 @@ export const DashboardModule: React.FC = () => {
             <p className="text-sm text-ink-400 mt-3">{t('dashboard.placesEmpty')}</p>
           ) : (
             <div className="mt-4 space-y-3">
-              <PlacesMap items={placesMedia} compact className="rounded-md" />
+              <PlacesMap items={placesMedia.slice(0, 200)} compact className="rounded-md" />
+              <VisitedPlacesList
+                places={visitedPlaces}
+                namingRemaining={namingRemaining}
+                onSelect={(place) =>
+                  openGalleryMap({
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                    placeId: place.id
+                  })
+                }
+              />
               <button
                 type="button"
                 onClick={() => openGalleryMap()}
