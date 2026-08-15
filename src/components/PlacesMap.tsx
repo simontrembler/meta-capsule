@@ -17,6 +17,8 @@ type PlacesMapProps = {
   className?: string;
   /** Compact preview (dashboard) — no popups, lighter chrome */
   compact?: boolean;
+  /** Hide the OSM/network hint strip (e.g. mobile map chrome) */
+  hideTilesHint?: boolean;
   onSelect?: (item: MediaAttachment) => void;
   focus?: MapFocus | null;
 };
@@ -52,10 +54,24 @@ function FlyToFocus({ focus }: { focus: MapFocus | null | undefined }) {
   return null;
 }
 
+function InvalidateOnResize() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false });
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 export const PlacesMap: React.FC<PlacesMapProps> = ({
   items,
   className = '',
   compact = false,
+  hideTilesHint = false,
   onSelect,
   focus
 }) => {
@@ -82,7 +98,7 @@ export const PlacesMap: React.FC<PlacesMapProps> = ({
 
   return (
     <div className={`relative z-0 isolate flex flex-col overflow-hidden border border-ink-200 bg-white ${className}`}>
-      {!compact && (
+      {!compact && !hideTilesHint && (
         <p className="shrink-0 border-b border-ink-100 bg-ink-50/90 px-3 py-2 text-[11px] leading-relaxed text-ink-500">
           {t('map.tilesHint')}
         </p>
@@ -101,6 +117,7 @@ export const PlacesMap: React.FC<PlacesMapProps> = ({
         />
         <FitToPoints positions={positions} hasFocus={Boolean(focus)} />
         <FlyToFocus focus={focus} />
+        <InvalidateOnResize />
         {geotagged.map((item) => (
           <CircleMarker
             key={item.id}

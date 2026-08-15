@@ -224,6 +224,9 @@ export const en: Record<TranslationKey, string> = {
   'gallery.view.grid': 'Grid',
   'gallery.view.map': 'Map ({count})',
   'gallery.mapCount': '{count} geotagged media (filters applied)',
+  'gallery.filtersToggle': 'Filters',
+  'gallery.filtersActive': '{count} active',
+  'gallery.filtersClose': 'Close filters',
 
   'map.emptyTitle': 'No places to show',
   'map.emptyHint': 'No GPS coordinates in the filtered media. Re-import an archive with EXIF, or widen filters.',

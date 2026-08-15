@@ -225,6 +225,9 @@ export const fr = {
   'gallery.view.grid': 'Grille',
   'gallery.view.map': 'Carte ({count})',
   'gallery.mapCount': '{count} médias géolocalisés (filtres appliqués)',
+  'gallery.filtersToggle': 'Filtres',
+  'gallery.filtersActive': '{count} actifs',
+  'gallery.filtersClose': 'Fermer les filtres',
 
   'map.emptyTitle': 'Aucun lieu à afficher',
   'map.emptyHint': 'Aucune coordonnée GPS dans les médias filtrés. Réimportez une archive avec EXIF, ou élargissez les filtres.',
