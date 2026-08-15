@@ -1,0 +1,18 @@
+# https://trivy.dev/docs/latest/references/configuration/config-file/
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+
+scan:
+  scanners:
+    - vuln
+    - secret
+  skip-dirs:
+    - node_modules
+    - dist
+    - tmp
+    - .git
+
+vulnerability:
+  ignore-unfixed: true
