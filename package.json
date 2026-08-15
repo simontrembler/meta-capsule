@@ -14,7 +14,7 @@
     "@tanstack/react-virtual": "^3.14.9",
     "@zip.js/zip.js": "^2.7.48",
     "dexie": "^4.0.8",
-    "dexie-react-hooks": "^1.1.7",
+    "dexie-react-hooks": "^4.4.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.427.0",
     "react": "^18.3.1",
