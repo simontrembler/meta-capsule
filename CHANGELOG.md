@@ -6,6 +6,14 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-08-15
+
+### Changé
+- Galerie mobile (mode Carte) : filtres en overlay et lieux visités en bandeau bas pour laisser la carte utilisable
+
+### Sécurité
+- Exemple nginx : les sondes `/.env` / WordPress reçoivent un 404 au lieu du catch-all SPA
+
 ## [1.3.1] - 2026-08-14
 
 ### Ajouté
