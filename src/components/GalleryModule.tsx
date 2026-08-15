@@ -12,17 +12,21 @@ import {
   AlertCircle,
   X,
   Download,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Filter,
   Calendar,
   MessageSquare,
   LayoutGrid,
-  Map as MapIcon
+  Map as MapIcon,
+  MapPin
 } from 'lucide-react';
 import { PlacesMap, hasGpsCoords, type MapFocus } from './PlacesMap';
 import { VisitedPlacesList } from './VisitedPlacesList';
 import { useVisitedPlaces } from '../hooks/useVisitedPlaces';
+import { fallbackPlaceLabel } from '../utils/places';
 
 type SourceFilter = 'all' | MediaSource;
 type TypeFilter = 'all' | 'photo' | 'video' | 'audio';
@@ -261,7 +265,27 @@ export const GalleryModule: React.FC = () => {
   const [mapFocus, setMapFocus] = useState<(MapFocus & { placeId?: string }) | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxBlobUrl, setLightboxBlobUrl] = useState<string | null>(null);
+  const [isNarrow, setIsNarrow] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [placesSheetOpen, setPlacesSheetOpen] = useState(false);
   const pendingMediaId = useRef<string | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const sync = () => setIsNarrow(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setFiltersOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [filtersOpen]);
 
   useEffect(() => {
     if (!requestedGalleryView) return;
@@ -461,123 +485,276 @@ export const GalleryModule: React.FC = () => {
     </button>
   );
 
-  return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem-3.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
-      <div className="bg-white p-3 sm:p-4 border border-ink-200 rounded-md space-y-3 shrink-0">
-        <div className="flex items-center gap-2 text-ink-800">
-          <Filter size={18} className="text-brand-600 shrink-0" />
-          <span className="font-semibold text-sm">{t('common.filters')}</span>
-          <span className="text-xs text-ink-400 font-medium truncate">
-            {isLoading
-              ? t('common.loading')
-              : t('gallery.loaded', {
-                  filtered: filteredItems.length,
-                  total: counts.total,
-                  months: mediaGroups.length
-                })}
-          </span>
-          <div className="ml-auto flex border border-ink-200 p-0.5 shrink-0">
-            {chip(viewMode === 'grid', () => setViewMode('grid'), t('gallery.view.grid'))}
-            {chip(
-              viewMode === 'map',
-              () => setViewMode('map'),
-              t('gallery.view.map', { count: counts.places })
-            )}
-          </div>
+  const activeFilterCount =
+    (sourceFilter !== 'all' ? 1 : 0) +
+    (typeFilter !== 'all' ? 1 : 0) +
+    (platformFilter !== 'all' ? 1 : 0) +
+    (monthFilter !== 'all' ? 1 : 0);
+
+  const useCompactMapChrome = viewMode === 'map' && isNarrow;
+
+  const viewToggle = (
+    <div className="flex border border-ink-200 p-0.5 shrink-0">
+      {chip(viewMode === 'grid', () => setViewMode('grid'), t('gallery.view.grid'))}
+      {chip(
+        viewMode === 'map',
+        () => setViewMode('map'),
+        t('gallery.view.map', { count: counts.places })
+      )}
+    </div>
+  );
+
+  const filterFields = (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5 min-w-0">
+        <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400">
+          <LayoutGrid size={12} /> {t('gallery.origin')}
         </div>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5 min-w-0">
-            <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400">
-              <LayoutGrid size={12} /> {t('gallery.origin')}
-            </div>
-            <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full">
-              {chip(sourceFilter === 'all', () => setSourceFilter('all'), t('gallery.source.all', { count: counts.total }))}
-              {chip(sourceFilter === 'post', () => setSourceFilter('post'), t('gallery.source.post', { count: counts.post }))}
-              {chip(sourceFilter === 'story', () => setSourceFilter('story'), t('gallery.source.story', { count: counts.story }))}
-              {chip(sourceFilter === 'message', () => setSourceFilter('message'), t('gallery.source.message', { count: counts.message }))}
-            </div>
-          </div>
-
-          <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full">
-            {chip(typeFilter === 'all', () => setTypeFilter('all'), t('gallery.type.all'))}
-            {chip(typeFilter === 'photo', () => setTypeFilter('photo'), t('gallery.type.photo', { count: counts.photo }))}
-            {chip(typeFilter === 'video', () => setTypeFilter('video'), t('gallery.type.video', { count: counts.video }))}
-            {chip(typeFilter === 'audio', () => setTypeFilter('audio'), t('gallery.type.audio', { count: counts.audio }))}
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <label
-              htmlFor="gallery-month-filter"
-              className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400 shrink-0"
-            >
-              <Calendar size={12} /> {t('gallery.period')}
-            </label>
-            <select
-              id="gallery-month-filter"
-              value={monthFilter}
-              onChange={(e) => setMonthFilter(e.target.value as MonthFilter)}
-              className="w-full sm:w-auto min-w-[14rem] max-w-full px-3 py-2 text-xs font-semibold bg-ink-50 border border-ink-200 rounded-md text-ink-900 outline-none focus:border-brand-500"
-            >
-              <option value="all">{t('gallery.period.all')}</option>
-              {monthOptions.map((opt) => (
-                <option key={opt.key} value={opt.key}>
-                  {opt.label} ({opt.count})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full self-start">
-            {chip(platformFilter === 'all', () => setPlatformFilter('all'), t('gallery.platform.all'))}
-            {chip(
-              platformFilter === 'facebook',
-              () => setPlatformFilter('facebook'),
-              'Facebook',
-              platformChipActiveClass('facebook')
-            )}
-            {chip(
-              platformFilter === 'instagram',
-              () => setPlatformFilter('instagram'),
-              'Instagram',
-              platformChipActiveClass('instagram')
-            )}
-          </div>
+        <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full">
+          {chip(sourceFilter === 'all', () => setSourceFilter('all'), t('gallery.source.all', { count: counts.total }))}
+          {chip(sourceFilter === 'post', () => setSourceFilter('post'), t('gallery.source.post', { count: counts.post }))}
+          {chip(sourceFilter === 'story', () => setSourceFilter('story'), t('gallery.source.story', { count: counts.story }))}
+          {chip(sourceFilter === 'message', () => setSourceFilter('message'), t('gallery.source.message', { count: counts.message }))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 space-y-8 min-h-0">
-        {viewMode === 'map' ? (
-          <div className="h-full min-h-[360px] flex flex-col lg:flex-row gap-3">
-            <div className="flex-1 min-h-[360px] min-w-0 flex flex-col">
-              <div className="mb-2 flex items-center gap-2 text-ink-700">
-                <MapIcon size={16} className="text-brand-600" />
-                <span className="text-xs font-semibold">
-                  {t('gallery.mapCount', { count: geotaggedItems.length })}
-                </span>
-              </div>
-              <PlacesMap
-                items={geotaggedItems}
-                className="min-h-[360px] flex-1 rounded-md"
-                focus={mapFocus}
-                onSelect={(item) => void openLightboxForItem(item)}
-              />
-            </div>
-            <VisitedPlacesList
-              className="lg:w-72 shrink-0 flex flex-col min-h-0 lg:h-full"
-              listClassName="max-h-56 lg:max-h-none lg:flex-1"
-              places={visitedPlaces}
-              namingRemaining={namingRemaining}
-              selectedId={mapFocus?.placeId}
-              onSelect={(place) =>
-                setMapFocus({
-                  latitude: place.latitude,
-                  longitude: place.longitude,
-                  placeId: place.id
-                })
-              }
-            />
+      <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full">
+        {chip(typeFilter === 'all', () => setTypeFilter('all'), t('gallery.type.all'))}
+        {chip(typeFilter === 'photo', () => setTypeFilter('photo'), t('gallery.type.photo', { count: counts.photo }))}
+        {chip(typeFilter === 'video', () => setTypeFilter('video'), t('gallery.type.video', { count: counts.video }))}
+        {chip(typeFilter === 'audio', () => setTypeFilter('audio'), t('gallery.type.audio', { count: counts.audio }))}
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <label
+          htmlFor="gallery-month-filter"
+          className="flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-ink-400 shrink-0"
+        >
+          <Calendar size={12} /> {t('gallery.period')}
+        </label>
+        <select
+          id="gallery-month-filter"
+          value={monthFilter}
+          onChange={(e) => setMonthFilter(e.target.value as MonthFilter)}
+          className="w-full sm:w-auto min-w-[14rem] max-w-full px-3 py-2 text-xs font-semibold bg-ink-50 border border-ink-200 rounded-md text-ink-900 outline-none focus:border-brand-500"
+        >
+          <option value="all">{t('gallery.period.all')}</option>
+          {monthOptions.map((opt) => (
+            <option key={opt.key} value={opt.key}>
+              {opt.label} ({opt.count})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex border border-ink-200 p-0.5 overflow-x-auto max-w-full self-start">
+        {chip(platformFilter === 'all', () => setPlatformFilter('all'), t('gallery.platform.all'))}
+        {chip(
+          platformFilter === 'facebook',
+          () => setPlatformFilter('facebook'),
+          'Facebook',
+          platformChipActiveClass('facebook')
+        )}
+        {chip(
+          platformFilter === 'instagram',
+          () => setPlatformFilter('instagram'),
+          'Instagram',
+          platformChipActiveClass('instagram')
+        )}
+      </div>
+    </div>
+  );
+
+  const selectedPlace = visitedPlaces.find((place) => place.id === mapFocus?.placeId);
+  const selectedPlaceLabel = selectedPlace
+    ? selectedPlace.label ||
+      t('places.unnamed', {
+        coords: fallbackPlaceLabel(selectedPlace.latitude, selectedPlace.longitude)
+      })
+    : null;
+
+  const selectPlace = (place: (typeof visitedPlaces)[number]) => {
+    setMapFocus({
+      latitude: place.latitude,
+      longitude: place.longitude,
+      placeId: place.id
+    });
+    setPlacesSheetOpen(false);
+  };
+
+  const mapPane = (
+    <div
+      className={
+        useCompactMapChrome
+          ? 'h-full min-h-0 flex flex-col relative'
+          : 'h-full min-h-[360px] flex flex-col lg:flex-row gap-3'
+      }
+    >
+      <div
+        className={
+          useCompactMapChrome
+            ? 'flex-1 min-h-0 min-w-0 flex flex-col'
+            : 'flex-1 min-h-[360px] min-w-0 flex flex-col'
+        }
+      >
+        {!useCompactMapChrome && (
+          <div className="mb-2 flex items-center gap-2 text-ink-700">
+            <MapIcon size={16} className="text-brand-600" />
+            <span className="text-xs font-semibold">
+              {t('gallery.mapCount', { count: geotaggedItems.length })}
+            </span>
           </div>
+        )}
+        <PlacesMap
+          items={geotaggedItems}
+          className={
+            useCompactMapChrome ? 'min-h-0 flex-1 rounded-md' : 'min-h-[360px] flex-1 rounded-md'
+          }
+          hideTilesHint={useCompactMapChrome}
+          focus={mapFocus}
+          onSelect={(item) => void openLightboxForItem(item)}
+        />
+      </div>
+
+      {useCompactMapChrome ? (
+        visitedPlaces.length > 0 && (
+          <div className="absolute inset-x-0 bottom-0 z-20 pointer-events-none">
+            <div className="pointer-events-auto mx-0 bg-white border border-ink-200 rounded-t-md shadow-[0_-4px_20px_rgba(28,25,23,0.08)]">
+              <button
+                type="button"
+                onClick={() => setPlacesSheetOpen((open) => !open)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-left"
+                aria-expanded={placesSheetOpen}
+              >
+                <MapPin size={14} className="text-brand-600 shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold text-ink-900">
+                    {t('places.listTitle', { count: visitedPlaces.length })}
+                  </span>
+                  {selectedPlaceLabel && (
+                    <span className="block text-[11px] text-ink-400 truncate mt-0.5">
+                      {selectedPlaceLabel}
+                    </span>
+                  )}
+                </span>
+                {placesSheetOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </button>
+              {placesSheetOpen && (
+                <div className="border-t border-ink-100 px-2 pb-2 max-h-[42vh] overflow-hidden flex flex-col">
+                  <VisitedPlacesList
+                    className="flex flex-col min-h-0"
+                    listClassName="max-h-[36vh] flex-1"
+                    places={visitedPlaces}
+                    namingRemaining={namingRemaining}
+                    selectedId={mapFocus?.placeId}
+                    onSelect={selectPlace}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      ) : (
+        <VisitedPlacesList
+          className="lg:w-72 shrink-0 flex flex-col min-h-0 lg:h-full"
+          listClassName="max-h-56 lg:max-h-none lg:flex-1"
+          places={visitedPlaces}
+          namingRemaining={namingRemaining}
+          selectedId={mapFocus?.placeId}
+          onSelect={selectPlace}
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <div className="p-4 sm:p-6 md:p-8 space-y-4 max-w-6xl mx-auto h-[calc(100dvh-3.5rem-3.5rem-env(safe-area-inset-bottom,0px))] md:h-[calc(100vh-4rem)] flex flex-col overflow-hidden">
+      {useCompactMapChrome ? (
+        <>
+          <div className="bg-white border border-ink-200 rounded-md shrink-0">
+            <div className="p-2.5 flex items-center gap-2">
+              {viewToggle}
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(true)}
+                className={`ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
+                  filtersOpen || activeFilterCount > 0
+                    ? 'border-brand-500 text-brand-800 bg-brand-50'
+                    : 'border-ink-200 text-ink-700 hover:bg-ink-50'
+                }`}
+                aria-expanded={filtersOpen}
+              >
+                <Filter size={14} />
+                <span>{t('gallery.filtersToggle')}</span>
+                {activeFilterCount > 0 && (
+                  <span className="text-[10px] font-bold">
+                    {t('gallery.filtersActive', { count: activeFilterCount })}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {filtersOpen && (
+            <div
+              className="fixed inset-0 z-40 bg-ink-950/45 flex items-end sm:items-center justify-center p-0 sm:p-4"
+              onClick={() => setFiltersOpen(false)}
+              role="presentation"
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('common.filters')}
+                className="w-full sm:max-w-lg bg-white border border-ink-200 rounded-t-md sm:rounded-md shadow-lg max-h-[80dvh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="sticky top-0 bg-white border-b border-ink-100 px-3 py-2.5 flex items-center gap-2">
+                  <Filter size={16} className="text-brand-600" />
+                  <span className="font-semibold text-sm text-ink-900">{t('common.filters')}</span>
+                  <span className="text-xs text-ink-400 truncate">
+                    {t('gallery.mapCount', { count: geotaggedItems.length })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="ml-auto p-1.5 rounded-md text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+                    aria-label={t('gallery.filtersClose')}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="p-3">{filterFields}</div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="bg-white p-3 sm:p-4 border border-ink-200 rounded-md space-y-3 shrink-0">
+          <div className="flex items-center gap-2 text-ink-800">
+            <Filter size={18} className="text-brand-600 shrink-0" />
+            <span className="font-semibold text-sm">{t('common.filters')}</span>
+            <span className="text-xs text-ink-400 font-medium truncate">
+              {isLoading
+                ? t('common.loading')
+                : t('gallery.loaded', {
+                    filtered: filteredItems.length,
+                    total: counts.total,
+                    months: mediaGroups.length
+                  })}
+            </span>
+            <div className="ml-auto">{viewToggle}</div>
+          </div>
+          {filterFields}
+        </div>
+      )}
+
+      <div
+        className={`flex-1 min-h-0 ${
+          useCompactMapChrome ? 'overflow-hidden' : 'overflow-y-auto pr-2 space-y-8'
+        }`}
+      >
+        {viewMode === 'map' ? (
+          mapPane
         ) : filteredItems.length > 0 ? (
           mediaGroups.map((group) => (
             <div key={group.key} className="space-y-4">
