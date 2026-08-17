@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.9",
-    "@zip.js/zip.js": "^2.7.48",
+    "@zip.js/zip.js": "^2.8.49",
     "dexie": "^4.0.8",
     "dexie-react-hooks": "^4.4.0",
     "leaflet": "^1.9.4",
