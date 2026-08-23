@@ -6,6 +6,13 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-23
+
+### Changé
+- Stack front : React 19, Lucide 1, Tailwind 4 (plugin Vite), TypeScript 7, react-leaflet 5
+- Icône GitHub locale (Lucide 1 a retiré les logos de marque)
+- Après déploiement : la PWA (`autoUpdate` + vérif au retour d’onglet) doit récupérer le nouveau shell — hard-refresh si l’ancienne version reste affichée
+
 ## [1.4.0] - 2026-08-23
 
 ### Ajouté
