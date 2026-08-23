@@ -119,6 +119,7 @@ function archiveSourceKey(source: MediaArchiveSource | File | null): string {
   if (!source) return '';
   if (source instanceof File) return `zip:${source.name}`;
   if (source.kind === 'zip') return `zip:${source.file.name}`;
+  if (source.kind === 'zips') return `zips:${source.files.map((f) => f.name).join('+')}`;
   return `${source.kind}:${source.name}`;
 }
 

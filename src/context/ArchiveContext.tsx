@@ -1,27 +1,28 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { db } from '../db/db';
 import { fileListToPathMap, revokeAllMediaUrls, type MediaArchiveSource } from '../utils/zipMediaResolver';
-import { archiveDisplayName } from '../utils/archiveEntries';
+import { archiveDisplayName, zipBatchDisplayName } from '../utils/archiveEntries';
 import type {
   FileSystemDirectoryHandle,
-  FileSystemFileHandle,
-  FileSystemHandle
+  FileSystemFileHandle
 } from '../types/file-system-access';
 import {
   clearAllArchiveHandles,
   clearArchiveHandle,
   ensureReadPermission,
-  getDroppedArchiveHandle,
+  getDroppedArchiveHandles,
   isDirectoryPickerSupported,
   isFileSystemAccessSupported,
   loadAllArchiveHandles,
-  loadArchiveHandle,
+  loadArchiveHandles,
   migrateLegacyArchiveHandle,
   pickDirectoryHandle,
-  pickZipFileHandle,
+  pickZipFileHandles,
   queryReadPermission,
+  saveArchiveFileHandles,
   saveArchiveHandle,
-  type ArchivePlatform
+  type ArchivePlatform,
+  type LoadedArchiveHandles
 } from '../utils/fileSystemAccess';
 import {
   clearPersistedSession,
@@ -54,6 +55,17 @@ function guessPlatformFromZipName(name: string): ArchivePlatform | null {
   return null;
 }
 
+function normalizeFileList(files: File | File[]): File[] {
+  return Array.isArray(files) ? files : [files];
+}
+
+function normalizeHandleList(
+  handles?: FileSystemFileHandle | FileSystemFileHandle[] | null
+): FileSystemFileHandle[] {
+  if (!handles) return [];
+  return Array.isArray(handles) ? handles : [handles];
+}
+
 function aggregateZipAccess(
   platforms: ArchivePlatform[],
   byPlatform: Partial<Record<ArchivePlatform, ZipAccessState>>
@@ -67,13 +79,40 @@ function aggregateZipAccess(
   return 'none';
 }
 
+type PlatformHandleStore = FileSystemDirectoryHandle | FileSystemFileHandle[];
+
+type PendingIngest =
+  | {
+      kind: 'zip';
+      file: File;
+      handle?: FileSystemFileHandle | null;
+      name: string;
+    }
+  | {
+      kind: 'zips';
+      files: File[];
+      handles?: FileSystemFileHandle[];
+      name: string;
+    }
+  | {
+      kind: 'directory';
+      handle: FileSystemDirectoryHandle;
+      name: string;
+    }
+  | {
+      kind: 'files';
+      files: File[];
+      name: string;
+    };
+
 interface ArchiveContextType {
   /** @deprecated Prefer getZipFile(platform) — primary platform ZIP */
   zipFile: File | null;
   zipAccessState: ZipAccessState;
   zipAccessByPlatform: Partial<Record<ArchivePlatform, ZipAccessState>>;
   zipFileName: string | null;
-  zipFiles: Partial<Record<ArchivePlatform, File | null>>;
+  /** ZIP File(s) per platform (multi-part Facebook batches). */
+  zipFiles: Partial<Record<ArchivePlatform, File[]>>;
   zipNames: Partial<Record<ArchivePlatform, string | null>>;
   getZipFile: (platform: ArchivePlatform) => File | null;
   getArchiveSource: (platform: ArchivePlatform) => MediaArchiveSource | null;
@@ -88,7 +127,10 @@ interface ArchiveContextType {
   ingestionStatusText: string;
   ingestionError: string | null;
   stats: IngestionStats | null;
-  startIngestion: (file: File, handle?: FileSystemFileHandle | null) => void;
+  startIngestion: (
+    files: File | File[],
+    handles?: FileSystemFileHandle | FileSystemFileHandle[] | null
+  ) => void;
   startIngestionFromDirectory: (handle: FileSystemDirectoryHandle) => void;
   startIngestionFromFileList: (files: File[]) => void;
   pickAndIngestZip: () => Promise<void>;
@@ -97,8 +139,8 @@ interface ArchiveContextType {
   pickAndIngestForPlatform: (platform: ArchivePlatform) => Promise<void>;
   ingestFromDrop: (dataTransfer: DataTransfer) => Promise<void>;
   attachZipForMedia: (
-    file: File,
-    handle?: FileSystemFileHandle | null,
+    files: File | File[],
+    handles?: FileSystemFileHandle | FileSystemFileHandle[] | null,
     platformHint?: ArchivePlatform | null
   ) => Promise<void>;
   reauthorizeZipAccess: (platform?: ArchivePlatform) => Promise<void>;
@@ -123,7 +165,7 @@ interface ArchiveContextType {
 const ArchiveContext = createContext<ArchiveContextType | undefined>(undefined);
 
 export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [zipFiles, setZipFiles] = useState<Partial<Record<ArchivePlatform, File | null>>>({});
+  const [zipFiles, setZipFiles] = useState<Partial<Record<ArchivePlatform, File[]>>>({});
   const [zipAccessByPlatform, setZipAccessByPlatform] = useState<
     Partial<Record<ArchivePlatform, ZipAccessState>>
   >({});
@@ -154,24 +196,18 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [supportsDirectoryPicker] = useState(() => isDirectoryPickerSupported());
 
   const workerRef = useRef<Worker | null>(null);
-  const handlesRef = useRef<Partial<Record<ArchivePlatform, FileSystemHandle>>>({});
-  const pendingIngestRef = useRef<{
-    kind: 'zip' | 'directory' | 'files';
-    file?: File;
-    handle?: FileSystemHandle | null;
-    files?: File[];
-    name: string;
-  } | null>(null);
+  const handlesRef = useRef<Partial<Record<ArchivePlatform, PlatformHandleStore>>>({});
+  const pendingIngestRef = useRef<PendingIngest | null>(null);
 
   const getZipFile = useCallback(
-    (platform: ArchivePlatform) => zipFiles[platform] ?? null,
+    (platform: ArchivePlatform) => zipFiles[platform]?.[0] ?? null,
     [zipFiles]
   );
 
-  const applyZipForPlatform = useCallback(
-    (platform: ArchivePlatform, file: File, handle?: FileSystemFileHandle | null) => {
-      setZipFiles((prev) => ({ ...prev, [platform]: file }));
-      setZipNames((prev) => ({ ...prev, [platform]: file.name }));
+  const applyZipsForPlatform = useCallback(
+    (platform: ArchivePlatform, files: File[], handles?: FileSystemFileHandle[] | null) => {
+      setZipFiles((prev) => ({ ...prev, [platform]: files }));
+      setZipNames((prev) => ({ ...prev, [platform]: zipBatchDisplayName(files) }));
       setZipAccessByPlatform((prev) => ({ ...prev, [platform]: 'ready' }));
       setDirectoryHandles((prev) => {
         const next = { ...prev };
@@ -183,8 +219,8 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         delete next[platform];
         return next;
       });
-      if (handle) {
-        handlesRef.current[platform] = handle;
+      if (handles && handles.length > 0) {
+        handlesRef.current[platform] = handles;
       }
     },
     []
@@ -224,14 +260,22 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
       delete next[platform];
       return next;
     });
+    delete handlesRef.current[platform];
   }, []);
 
   const archiveSources = useMemo(() => {
     const out: Partial<Record<ArchivePlatform, MediaArchiveSource>> = {};
     for (const platform of ['facebook', 'instagram'] as ArchivePlatform[]) {
-      const zip = zipFiles[platform];
-      if (zip) {
-        out[platform] = { kind: 'zip', file: zip };
+      const zips = zipFiles[platform];
+      if (zips && zips.length > 0) {
+        out[platform] =
+          zips.length === 1
+            ? { kind: 'zip', file: zips[0] }
+            : {
+                kind: 'zips',
+                files: zips,
+                name: zipNames[platform] || zipBatchDisplayName(zips)
+              };
         continue;
       }
       const dir = directoryHandles[platform];
@@ -316,7 +360,12 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (Object.keys(handles).length === 0) {
           const legacy = await migrateLegacyArchiveHandle(rebuilt.platform);
-          if (legacy) handles[rebuilt.platform] = legacy;
+          if (legacy) {
+            handles[rebuilt.platform] =
+              legacy.kind === 'directory'
+                ? { kind: 'directory', handle: legacy as FileSystemDirectoryHandle }
+                : { kind: 'files', handles: [legacy as FileSystemFileHandle] };
+          }
         }
 
         const accessMap: Partial<Record<ArchivePlatform, ZipAccessState>> = {};
@@ -324,35 +373,60 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         let anyUnavailable = false;
 
         for (const platform of rebuilt.platforms) {
-          const handle = handles[platform];
-          if (!handle) {
+          const loaded: LoadedArchiveHandles | undefined = handles[platform];
+          if (!loaded) {
             accessMap[platform] = 'unavailable';
             anyUnavailable = true;
             continue;
           }
 
-          handlesRef.current[platform] = handle;
-          const permission = await queryReadPermission(handle);
+          if (loaded.kind === 'directory') {
+            handlesRef.current[platform] = loaded.handle;
+            const permission = await queryReadPermission(loaded.handle);
 
-          if (permission === 'granted') {
-            if (handle.kind === 'directory') {
+            if (permission === 'granted') {
               if (!cancelled) {
-                applyDirectoryForPlatform(platform, handle as FileSystemDirectoryHandle);
+                applyDirectoryForPlatform(platform, loaded.handle);
                 accessMap[platform] = 'ready';
               }
+            } else if (permission === 'prompt') {
+              accessMap[platform] = 'needs-permission';
+              anyNeedsPermission = true;
+              setZipNames((prev) => ({
+                ...prev,
+                [platform]: loaded.handle.name || prev[platform] || null
+              }));
             } else {
-              const file = await (handle as FileSystemFileHandle).getFile();
-              if (!cancelled) {
-                applyZipForPlatform(platform, file, handle as FileSystemFileHandle);
-                accessMap[platform] = 'ready';
-              }
+              accessMap[platform] = 'unavailable';
+              anyUnavailable = true;
             }
-          } else if (permission === 'prompt') {
+            continue;
+          }
+
+          handlesRef.current[platform] = loaded.handles;
+          const permissions = await Promise.all(
+            loaded.handles.map((h) => queryReadPermission(h))
+          );
+
+          if (permissions.every((p) => p === 'granted')) {
+            const files: File[] = [];
+            for (const handle of loaded.handles) {
+              files.push(await handle.getFile());
+            }
+            if (!cancelled) {
+              applyZipsForPlatform(platform, files, loaded.handles);
+              accessMap[platform] = 'ready';
+            }
+          } else if (permissions.some((p) => p === 'prompt')) {
             accessMap[platform] = 'needs-permission';
             anyNeedsPermission = true;
             setZipNames((prev) => ({
               ...prev,
-              [platform]: handle.name || prev[platform] || null
+              [platform]:
+                prev[platform] ||
+                (loaded.handles.length === 1
+                  ? loaded.handles[0].name
+                  : `${loaded.handles.length} archives`)
             }));
           } else {
             accessMap[platform] = 'unavailable';
@@ -387,19 +461,10 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => {
       cancelled = true;
     };
-  }, [applyZipForPlatform, applyDirectoryForPlatform]);
+  }, [applyZipsForPlatform, applyDirectoryForPlatform]);
 
   const launchIngestion = useCallback(
-    (
-      pending: {
-        kind: 'zip' | 'directory' | 'files';
-        file?: File;
-        handle?: FileSystemHandle | null;
-        files?: File[];
-        name: string;
-      },
-      workerPayload: Record<string, unknown>
-    ) => {
+    (pending: PendingIngest, workerPayload: Record<string, unknown>) => {
       if (isIngesting) return;
 
       setIsIngesting(true);
@@ -411,17 +476,31 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const guessed = guessPlatformFromZipName(pending.name);
 
       if (guessed) {
-        if (pending.kind === 'zip' && pending.file) {
-          applyZipForPlatform(guessed, pending.file, (pending.handle as FileSystemFileHandle) ?? null);
-        } else if (pending.kind === 'directory' && pending.handle?.kind === 'directory') {
-          applyDirectoryForPlatform(guessed, pending.handle as FileSystemDirectoryHandle);
-        } else if (pending.kind === 'files' && pending.files) {
-          applyFilesForPlatform(guessed, pending.files, pending.name);
-        }
-        if (pending.handle) {
+        if (pending.kind === 'zip') {
+          applyZipsForPlatform(
+            guessed,
+            [pending.file],
+            pending.handle ? [pending.handle] : null
+          );
+          if (pending.handle) {
+            void saveArchiveFileHandles(guessed, [pending.handle], pending.name).catch((err) => {
+              console.warn('Unable to persist file handle:', err);
+            });
+          }
+        } else if (pending.kind === 'zips') {
+          applyZipsForPlatform(guessed, pending.files, pending.handles ?? null);
+          if (pending.handles && pending.handles.length > 0) {
+            void saveArchiveFileHandles(guessed, pending.handles, pending.name).catch((err) => {
+              console.warn('Unable to persist file handles:', err);
+            });
+          }
+        } else if (pending.kind === 'directory') {
+          applyDirectoryForPlatform(guessed, pending.handle);
           void saveArchiveHandle(guessed, pending.handle).catch((err) => {
             console.warn('Unable to persist file handle:', err);
           });
+        } else if (pending.kind === 'files') {
+          applyFilesForPlatform(guessed, pending.files, pending.name);
         }
       }
 
@@ -443,29 +522,38 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const platform = (payload.stats?.platform || guessed || 'facebook') as ArchivePlatform;
           const done = pendingIngestRef.current;
 
-          if (done?.kind === 'directory' && done.handle?.kind === 'directory') {
-            applyDirectoryForPlatform(platform, done.handle as FileSystemDirectoryHandle);
+          if (done?.kind === 'directory') {
+            applyDirectoryForPlatform(platform, done.handle);
             try {
               await saveArchiveHandle(platform, done.handle);
             } catch (err) {
               console.warn('Unable to persist directory handle:', err);
             }
-          } else if (done?.kind === 'files' && done.files) {
+          } else if (done?.kind === 'files') {
             applyFilesForPlatform(platform, done.files, done.name);
             await clearArchiveHandle(platform);
             delete handlesRef.current[platform];
-          } else {
-            const file = done?.file;
-            if (file) {
-              applyZipForPlatform(
-                platform,
-                file,
-                (done.handle as FileSystemFileHandle) ?? null
-              );
-            }
-            if (done?.handle?.kind === 'file') {
+          } else if (done?.kind === 'zips') {
+            applyZipsForPlatform(platform, done.files, done.handles ?? null);
+            if (done.handles && done.handles.length > 0) {
               try {
-                await saveArchiveHandle(platform, done.handle);
+                await saveArchiveFileHandles(platform, done.handles, done.name);
+              } catch (err) {
+                console.warn('Unable to persist file handles:', err);
+              }
+            } else {
+              await clearArchiveHandle(platform);
+              delete handlesRef.current[platform];
+            }
+          } else if (done?.kind === 'zip') {
+            applyZipsForPlatform(
+              platform,
+              [done.file],
+              done.handle ? [done.handle] : null
+            );
+            if (done.handle) {
+              try {
+                await saveArchiveFileHandles(platform, [done.handle], done.name);
               } catch (err) {
                 console.warn('Unable to persist file handle:', err);
               }
@@ -510,14 +598,32 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       worker.postMessage({ type: 'START', ...workerPayload });
     },
-    [applyDirectoryForPlatform, applyFilesForPlatform, applyZipForPlatform, isIngesting]
+    [applyDirectoryForPlatform, applyFilesForPlatform, applyZipsForPlatform, isIngesting]
   );
 
   const startIngestion = useCallback(
-    (file: File, handle?: FileSystemFileHandle | null) => {
+    (
+      filesInput: File | File[],
+      handlesInput?: FileSystemFileHandle | FileSystemFileHandle[] | null
+    ) => {
+      const files = normalizeFileList(filesInput).filter((f) =>
+        f.name.toLowerCase().endsWith('.zip')
+      );
+      if (files.length === 0) return;
+      const handles = normalizeHandleList(handlesInput);
+      const name = zipBatchDisplayName(files);
+
+      if (files.length === 1) {
+        launchIngestion(
+          { kind: 'zip', file: files[0], handle: handles[0] ?? null, name },
+          { source: 'zip', file: files[0], archiveName: name }
+        );
+        return;
+      }
+
       launchIngestion(
-        { kind: 'zip', file, handle: handle ?? null, name: file.name },
-        { source: 'zip', file, archiveName: file.name }
+        { kind: 'zips', files, handles, name },
+        { source: 'zips', files, archiveName: name }
       );
     },
     [launchIngestion]
@@ -553,16 +659,20 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     try {
-      const handle = await pickZipFileHandle();
-      if (!handle) return;
+      const handles = await pickZipFileHandles();
+      if (handles.length === 0) return;
 
-      const file = await handle.getFile();
-      if (!file.name.toLowerCase().endsWith('.zip')) {
-        setIngestionError('Veuillez sélectionner une archive .zip.');
-        return;
+      const files: File[] = [];
+      for (const handle of handles) {
+        const file = await handle.getFile();
+        if (!file.name.toLowerCase().endsWith('.zip')) {
+          setIngestionError('Veuillez sélectionner uniquement des archives .zip.');
+          return;
+        }
+        files.push(file);
       }
 
-      startIngestion(file, handle);
+      startIngestion(files, handles);
     } catch (error: unknown) {
       console.error('pickAndIngestZip failed:', error);
       setIngestionError(
@@ -610,25 +720,29 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       try {
         if (supportsFileSystemAccess) {
-          const handle = await pickZipFileHandle();
-          if (!handle) return;
-          const file = await handle.getFile();
-          if (!file.name.toLowerCase().endsWith('.zip')) {
-            setIngestionError('Veuillez sélectionner une archive .zip.');
-            return;
+          const handles = await pickZipFileHandles();
+          if (handles.length === 0) return;
+          const files: File[] = [];
+          for (const handle of handles) {
+            const file = await handle.getFile();
+            if (!file.name.toLowerCase().endsWith('.zip')) {
+              setIngestionError('Veuillez sélectionner uniquement des archives .zip.');
+              return;
+            }
+            files.push(file);
           }
-          startIngestion(file, handle);
+          startIngestion(files, handles);
           return;
         }
 
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.zip,application/zip';
+        input.multiple = true;
         input.onchange = () => {
-          const file = input.files?.[0];
-          if (file?.name.toLowerCase().endsWith('.zip')) {
-            startIngestion(file, null);
-          }
+          const selected = input.files ? Array.from(input.files) : [];
+          const zips = selected.filter((f) => f.name.toLowerCase().endsWith('.zip'));
+          if (zips.length > 0) startIngestion(zips, null);
         };
         input.click();
       } catch (error: unknown) {
@@ -646,18 +760,30 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (isIngesting) return;
 
       try {
-        const handle = await getDroppedArchiveHandle(dataTransfer);
-        if (handle?.kind === 'directory') {
-          startIngestionFromDirectory(handle as FileSystemDirectoryHandle);
+        const droppedHandles = await getDroppedArchiveHandles(dataTransfer);
+        const dirHandles = droppedHandles.filter(
+          (h): h is FileSystemDirectoryHandle => h.kind === 'directory'
+        );
+        const fileHandles = droppedHandles.filter(
+          (h): h is FileSystemFileHandle => h.kind === 'file'
+        );
+
+        if (dirHandles.length === 1 && fileHandles.length === 0) {
+          startIngestionFromDirectory(dirHandles[0]);
           return;
         }
-        if (handle?.kind === 'file') {
-          const file = await (handle as FileSystemFileHandle).getFile();
-          if (!file.name.toLowerCase().endsWith('.zip')) {
-            setIngestionError('Veuillez déposer une archive .zip ou un dossier d’export Meta.');
-            return;
+
+        if (fileHandles.length > 0) {
+          const files: File[] = [];
+          for (const handle of fileHandles) {
+            const file = await handle.getFile();
+            if (!file.name.toLowerCase().endsWith('.zip')) {
+              setIngestionError('Veuillez déposer des archives .zip ou un dossier d’export Meta.');
+              return;
+            }
+            files.push(file);
           }
-          startIngestion(file, handle as FileSystemFileHandle);
+          startIngestion(files, fileHandles);
           return;
         }
 
@@ -668,11 +794,11 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return;
         }
 
-        const file = dropped[0];
-        if (file && file.name.toLowerCase().endsWith('.zip')) {
-          startIngestion(file, null);
-        } else if (file) {
-          setIngestionError('Veuillez déposer une archive .zip ou un dossier d’export Meta.');
+        const zips = dropped.filter((f) => f.name.toLowerCase().endsWith('.zip'));
+        if (zips.length > 0) {
+          startIngestion(zips, null);
+        } else if (dropped.length > 0) {
+          setIngestionError('Veuillez déposer des archives .zip ou un dossier d’export Meta.');
         }
       } catch (error: unknown) {
         console.error('ingestFromDrop failed:', error);
@@ -686,13 +812,20 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const attachZipForMedia = useCallback(
     async (
-      file: File,
-      handle?: FileSystemFileHandle | null,
+      filesInput: File | File[],
+      handlesInput?: FileSystemFileHandle | FileSystemFileHandle[] | null,
       platformHint?: ArchivePlatform | null
     ) => {
+      const files = normalizeFileList(filesInput).filter((f) =>
+        f.name.toLowerCase().endsWith('.zip')
+      );
+      if (files.length === 0) return;
+      const handles = normalizeHandleList(handlesInput);
+      const label = zipBatchDisplayName(files);
+
       const platform =
         platformHint ||
-        guessPlatformFromZipName(file.name) ||
+        guessPlatformFromZipName(files[0].name) ||
         stats?.platform ||
         (stats?.platforms[0] as ArchivePlatform | undefined);
 
@@ -702,14 +835,14 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       revokeAllMediaUrls();
-      applyZipForPlatform(platform, file, handle ?? null);
+      applyZipsForPlatform(platform, files, handles.length > 0 ? handles : null);
 
-      if (handle) {
-        await saveArchiveHandle(platform, handle);
+      if (handles.length > 0) {
+        await saveArchiveFileHandles(platform, handles, label);
       }
 
       setZipNames((prev) => {
-        const next = { ...prev, [platform]: file.name };
+        const next = { ...prev, [platform]: label };
         void rebuildSessionStats(next).then((rebuilt) => {
           if (rebuilt) {
             setStats(rebuilt);
@@ -721,7 +854,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setIngestionStatusText('');
     },
-    [applyZipForPlatform, stats?.platform, stats?.platforms]
+    [applyZipsForPlatform, stats?.platform, stats?.platforms]
   );
 
   const reauthorizeZipAccess = useCallback(
@@ -731,27 +864,45 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
         : ((stats?.platforms || Object.keys(handlesRef.current)) as ArchivePlatform[]);
 
       for (const p of targets) {
-        const handle = handlesRef.current[p] ?? (await loadArchiveHandle(p));
-        if (!handle) {
-          setZipAccessByPlatform((prev) => ({ ...prev, [p]: 'unavailable' }));
-          continue;
-        }
-
-        handlesRef.current[p] = handle;
-
-        try {
-          const permission = await ensureReadPermission(handle);
-          if (permission !== 'granted') {
+        let stored = handlesRef.current[p];
+        if (!stored) {
+          const loaded = await loadArchiveHandles(p);
+          if (!loaded) {
             setZipAccessByPlatform((prev) => ({ ...prev, [p]: 'unavailable' }));
             continue;
           }
+          stored = loaded.kind === 'directory' ? loaded.handle : loaded.handles;
+          handlesRef.current[p] = stored;
+        }
 
-          revokeAllMediaUrls();
-          if (handle.kind === 'directory') {
-            applyDirectoryForPlatform(p, handle as FileSystemDirectoryHandle);
+        try {
+          if (Array.isArray(stored)) {
+            let allGranted = true;
+            for (const handle of stored) {
+              const permission = await ensureReadPermission(handle);
+              if (permission !== 'granted') {
+                allGranted = false;
+                break;
+              }
+            }
+            if (!allGranted) {
+              setZipAccessByPlatform((prev) => ({ ...prev, [p]: 'unavailable' }));
+              continue;
+            }
+            const files: File[] = [];
+            for (const handle of stored) {
+              files.push(await handle.getFile());
+            }
+            revokeAllMediaUrls();
+            applyZipsForPlatform(p, files, stored);
           } else {
-            const file = await (handle as FileSystemFileHandle).getFile();
-            applyZipForPlatform(p, file, handle as FileSystemFileHandle);
+            const permission = await ensureReadPermission(stored);
+            if (permission !== 'granted') {
+              setZipAccessByPlatform((prev) => ({ ...prev, [p]: 'unavailable' }));
+              continue;
+            }
+            revokeAllMediaUrls();
+            applyDirectoryForPlatform(p, stored);
           }
         } catch (error) {
           console.error('reauthorizeZipAccess failed:', error);
@@ -761,21 +912,25 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       setIngestionStatusText('');
     },
-    [applyDirectoryForPlatform, applyZipForPlatform, stats?.platforms]
+    [applyDirectoryForPlatform, applyZipsForPlatform, stats?.platforms]
   );
 
   const pickZipForMedia = useCallback(
     async (platform?: ArchivePlatform) => {
       try {
         if (supportsFileSystemAccess) {
-          const handle = await pickZipFileHandle();
-          if (!handle) return;
-          const file = await handle.getFile();
-          if (!file.name.toLowerCase().endsWith('.zip')) {
-            setIngestionError('Veuillez sélectionner une archive .zip.');
-            return;
+          const handles = await pickZipFileHandles();
+          if (handles.length === 0) return;
+          const files: File[] = [];
+          for (const handle of handles) {
+            const file = await handle.getFile();
+            if (!file.name.toLowerCase().endsWith('.zip')) {
+              setIngestionError('Veuillez sélectionner uniquement des archives .zip.');
+              return;
+            }
+            files.push(file);
           }
-          await attachZipForMedia(file, handle, platform ?? null);
+          await attachZipForMedia(files, handles, platform ?? null);
           return;
         }
       } catch (error: unknown) {
@@ -909,7 +1064,7 @@ export const ArchiveProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const primaryPlatform = stats?.platform;
-  const zipFile = primaryPlatform ? zipFiles[primaryPlatform] ?? null : null;
+  const zipFile = primaryPlatform ? zipFiles[primaryPlatform]?.[0] ?? null : null;
   const zipFileName =
     (primaryPlatform && zipNames[primaryPlatform]) ||
     Object.values(zipNames).find(Boolean) ||

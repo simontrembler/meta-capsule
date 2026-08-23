@@ -4,6 +4,7 @@ import {
   entriesFromDirectory,
   entriesFromFileList,
   entriesFromZip,
+  entriesFromZips,
   type ArchiveEntry
 } from '../utils/archiveEntries';
 import type { Message, Post, MediaAttachment, MediaSource } from '../db/models';
@@ -212,7 +213,7 @@ function detectPlatformQuick(
 self.onmessage = async (event: MessageEvent) => {
   const { type, source, file, directoryHandle, files, archiveName } = event.data as {
     type: string;
-    source?: 'zip' | 'directory' | 'files';
+    source?: 'zip' | 'zips' | 'directory' | 'files';
     file?: File;
     directoryHandle?: FileSystemDirectoryHandle;
     files?: File[];
@@ -223,12 +224,20 @@ self.onmessage = async (event: MessageEvent) => {
 
   try {
     let entries: ArchiveEntry[];
-    const displayName = archiveName || file?.name || directoryHandle?.name || 'archive';
+    const displayName =
+      archiveName ||
+      (files && files.length > 1 ? `${files.length} archives` : undefined) ||
+      file?.name ||
+      files?.[0]?.name ||
+      directoryHandle?.name ||
+      'archive';
 
     if (source === 'directory' && directoryHandle) {
       entries = await entriesFromDirectory(directoryHandle);
     } else if (source === 'files' && files && files.length > 0) {
       entries = entriesFromFileList(files);
+    } else if (source === 'zips' && files && files.length > 0) {
+      entries = await entriesFromZips(files);
     } else if (file) {
       entries = await entriesFromZip(file);
     } else {
@@ -239,15 +248,16 @@ self.onmessage = async (event: MessageEvent) => {
 
     const detectedPlatform = detectPlatformQuick(displayName, entries);
 
-    // Facebook multi-ZIP trap: a media-only part has no profile/messages/posts JSON.
+    // Facebook multi-ZIP trap: a media-only part (or incomplete selection) has no core JSON.
     // Abort before clearPlatformData so we don't wipe a previous good FB index.
+    // Guard runs on the union when source === 'zips'.
     if (
       detectedPlatform === 'facebook' &&
-      source === 'zip' &&
+      (source === 'zip' || source === 'zips' || (!source && file)) &&
       facebookZipLacksCoreJson(entries)
     ) {
       throw new Error(
-        "Ce ZIP Facebook ne contient presque pas de métadonnées JSON (souvent une partie médias d’un export multi-fichiers). Extrayez toutes les parties du même batch dans un seul dossier avec un outil local open source (PeaZip, 7-Zip), puis importez ce dossier — n’uploadez pas vos archives Meta sur un site de fusion en ligne."
+        "Cette sélection Facebook ne contient presque pas de métadonnées JSON (souvent une partie médias d’un export multi-fichiers). Sélectionnez toutes les parties .zip du même batch, ou extrayez-les dans un dossier avec un outil local open source (PeaZip, 7-Zip) puis ouvrez ce dossier — n’uploadez pas vos archives Meta sur un site de fusion en ligne."
       );
     }
 

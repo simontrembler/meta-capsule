@@ -15,6 +15,10 @@ export function archiveHandleId(platform: ArchivePlatform): string {
   return `archive-zip-${platform}`;
 }
 
+export type LoadedArchiveHandles =
+  | { kind: 'directory'; handle: FileSystemDirectoryHandle }
+  | { kind: 'files'; handles: FileSystemFileHandle[] };
+
 export function isFileSystemAccessSupported(): boolean {
   return typeof window !== 'undefined' && typeof window.showOpenFilePicker === 'function';
 }
@@ -23,29 +27,36 @@ export function isDirectoryPickerSupported(): boolean {
   return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
 }
 
+const ZIP_PICKER_TYPES = [
+  {
+    description: 'Archive Meta (.zip)',
+    accept: {
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip']
+    }
+  }
+];
+
+/** @deprecated Prefer pickZipFileHandles — kept for single-file call sites */
 export async function pickZipFileHandle(): Promise<FileSystemFileHandle | null> {
+  const handles = await pickZipFileHandles();
+  return handles[0] ?? null;
+}
+
+export async function pickZipFileHandles(): Promise<FileSystemFileHandle[]> {
   if (!isFileSystemAccessSupported() || !window.showOpenFilePicker) {
-    return null;
+    return [];
   }
 
   try {
-    const [handle] = await window.showOpenFilePicker({
-      multiple: false,
+    return await window.showOpenFilePicker({
+      multiple: true,
       excludeAcceptAllOption: true,
-      types: [
-        {
-          description: 'Archive Meta (.zip)',
-          accept: {
-            'application/zip': ['.zip'],
-            'application/x-zip-compressed': ['.zip']
-          }
-        }
-      ]
+      types: ZIP_PICKER_TYPES
     });
-    return handle;
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return null;
+      return [];
     }
     throw error;
   }
@@ -66,15 +77,32 @@ export async function pickDirectoryHandle(): Promise<FileSystemDirectoryHandle |
   }
 }
 
+/** @deprecated Prefer getDroppedArchiveHandles */
 export async function getDroppedArchiveHandle(
   dataTransfer: DataTransfer
 ): Promise<FileSystemHandle | null> {
-  const item = dataTransfer.items?.[0];
-  if (!item || typeof item.getAsFileSystemHandle !== 'function') {
-    return null;
-  }
+  const handles = await getDroppedArchiveHandles(dataTransfer);
+  return handles[0] ?? null;
+}
 
-  return (await item.getAsFileSystemHandle()) ?? null;
+export async function getDroppedArchiveHandles(
+  dataTransfer: DataTransfer
+): Promise<FileSystemHandle[]> {
+  const items = dataTransfer.items;
+  if (!items?.length) return [];
+
+  const handles: FileSystemHandle[] = [];
+  for (let i = 0; i < items.length; i += 1) {
+    const item = items[i];
+    if (!item || typeof item.getAsFileSystemHandle !== 'function') continue;
+    try {
+      const handle = await item.getAsFileSystemHandle();
+      if (handle) handles.push(handle);
+    } catch {
+      /* ignore items that cannot expose a handle */
+    }
+  }
+  return handles;
 }
 
 export async function queryReadPermission(
@@ -114,12 +142,50 @@ export async function saveArchiveHandle(
   await db.fileHandles.delete(ARCHIVE_HANDLE_ID);
 }
 
+export async function saveArchiveFileHandles(
+  platform: ArchivePlatform,
+  handles: FileSystemFileHandle[],
+  displayName?: string
+): Promise<void> {
+  if (handles.length === 0) {
+    await clearArchiveHandle(platform);
+    return;
+  }
+
+  await db.fileHandles.put({
+    id: archiveHandleId(platform),
+    fileName: displayName || (handles.length === 1 ? handles[0].name : `${handles.length} archives`),
+    kind: 'file',
+    handle: handles[0],
+    handles: handles.length > 1 ? handles : undefined
+  });
+  await db.fileHandles.delete(ARCHIVE_HANDLE_ID);
+}
+
 export async function loadArchiveHandle(
   platform: ArchivePlatform
 ): Promise<FileSystemHandle | null> {
+  const loaded = await loadArchiveHandles(platform);
+  if (!loaded) return null;
+  if (loaded.kind === 'directory') return loaded.handle;
+  return loaded.handles[0] ?? null;
+}
+
+export async function loadArchiveHandles(
+  platform: ArchivePlatform
+): Promise<LoadedArchiveHandles | null> {
   const record = await db.fileHandles.get(archiveHandleId(platform));
-  if (record?.handle) return record.handle;
-  return null;
+  if (!record?.handle) return null;
+
+  if (record.kind === 'directory' || record.handle.kind === 'directory') {
+    return { kind: 'directory', handle: record.handle as FileSystemDirectoryHandle };
+  }
+
+  const handles =
+    record.handles && record.handles.length > 0
+      ? record.handles
+      : [record.handle as FileSystemFileHandle];
+  return { kind: 'files', handles };
 }
 
 /** One-time migration from pre-multi-archive storage onto a known platform */
@@ -135,19 +201,21 @@ export async function migrateLegacyArchiveHandle(
   await db.fileHandles.put({
     id: archiveHandleId(platform),
     fileName: legacy.fileName,
-    handle: legacy.handle
+    kind: legacy.handle.kind,
+    handle: legacy.handle,
+    handles: legacy.handles
   });
   await db.fileHandles.delete(ARCHIVE_HANDLE_ID);
   return legacy.handle;
 }
 
 export async function loadAllArchiveHandles(): Promise<
-  Partial<Record<ArchivePlatform, FileSystemHandle>>
+  Partial<Record<ArchivePlatform, LoadedArchiveHandles>>
 > {
-  const result: Partial<Record<ArchivePlatform, FileSystemHandle>> = {};
+  const result: Partial<Record<ArchivePlatform, LoadedArchiveHandles>> = {};
   for (const platform of ['facebook', 'instagram'] as ArchivePlatform[]) {
-    const handle = await loadArchiveHandle(platform);
-    if (handle) result[platform] = handle;
+    const loaded = await loadArchiveHandles(platform);
+    if (loaded) result[platform] = loaded;
   }
   return result;
 }

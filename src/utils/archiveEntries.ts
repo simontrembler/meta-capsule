@@ -14,18 +14,72 @@ function normalizePath(p: string): string {
   return p.replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
-export async function entriesFromZip(file: File): Promise<ArchiveEntry[]> {
-  const zipReader = new ZipReader(new BlobReader(file));
-  const raw = await zipReader.getEntries();
-  return raw.map((entry) => ({
+type ZipRawEntry = {
+  filename: string;
+  directory?: boolean;
+  lastModDate?: Date;
+  uncompressedSize?: number;
+  getData: (writer: unknown) => Promise<string>;
+};
+
+function mapZipEntry(entry: ZipRawEntry): ArchiveEntry & { size: number } {
+  return {
     filename: normalizePath(entry.filename),
     directory: Boolean(entry.directory),
     lastModDate: entry.lastModDate,
-    getText: async () => {
-      const typed = entry as { getData: (writer: unknown) => Promise<string> };
-      return typed.getData(new TextWriter());
+    size: entry.uncompressedSize ?? 0,
+    getText: async () => entry.getData(new TextWriter())
+  };
+}
+
+export async function entriesFromZip(file: File): Promise<ArchiveEntry[]> {
+  const zipReader = new ZipReader(new BlobReader(file));
+  const raw = (await zipReader.getEntries()) as ZipRawEntry[];
+  return raw.map((entry) => {
+    const mapped = mapZipEntry(entry);
+    const { size: _size, ...archiveEntry } = mapped;
+    return archiveEntry;
+  });
+}
+
+/**
+ * Union entries from multiple ZIP parts (Facebook multi-part exports).
+ * Collision policy: prefer non-empty over empty (0-byte stubs); otherwise larger size wins.
+ */
+export async function entriesFromZips(files: File[]): Promise<ArchiveEntry[]> {
+  if (files.length === 0) return [];
+  if (files.length === 1) return entriesFromZip(files[0]);
+
+  const byPath = new Map<string, ArchiveEntry & { size: number }>();
+
+  for (const file of files) {
+    const zipReader = new ZipReader(new BlobReader(file));
+    const raw = (await zipReader.getEntries()) as ZipRawEntry[];
+    for (const rawEntry of raw) {
+      const mapped = mapZipEntry(rawEntry);
+      const key = mapped.filename.toLowerCase();
+      const existing = byPath.get(key);
+      if (!existing) {
+        byPath.set(key, mapped);
+        continue;
+      }
+      const preferNew =
+        (mapped.size > 0 && existing.size === 0) ||
+        (mapped.size > existing.size && !(existing.size > 0 && mapped.size === 0));
+      if (preferNew) {
+        byPath.set(key, mapped);
+      }
     }
-  }));
+  }
+
+  return Array.from(byPath.values()).map(({ size: _size, ...entry }) => entry);
+}
+
+/** Display label for one or many ZIP files. */
+export function zipBatchDisplayName(files: File[]): string {
+  if (files.length === 0) return 'archive';
+  if (files.length === 1) return files[0].name;
+  return `${files.length} archives · ${files[0].name}`;
 }
 
 export async function entriesFromDirectory(
