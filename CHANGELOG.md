@@ -6,6 +6,18 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-23
+
+### Ajouté
+- Import multi-ZIP Facebook : sélectionner ou glisser toutes les parties `.zip` d’un même batch d’un coup (union virtuelle à l’ingest + médias à la demande)
+
+### Changé
+- Copy import / archives : multi-sélection native mise en avant ; l’ouverture d’un dossier extrait (PeaZip / 7-Zip) reste disponible
+- Persistance File System Access : plusieurs handles ZIP par plateforme (Chrome / Edge)
+
+### Sécurité
+- Workflow Trivy (filesystem) + publication GitHub Code Scanning
+
 ## [1.3.2] - 2026-08-15
 
 ### Changé
