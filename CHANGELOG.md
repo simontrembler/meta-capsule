@@ -6,6 +6,11 @@ Les notes sous **Unreleased** sont déplacées vers une version datée par `npm 
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-08-23
+
+### Corrigé
+- Alignement `package.json` / lockfile pour que `npm ci` (build Docker de publish) réussisse sous npm 10
+
 ## [1.5.0] - 2026-08-23
 
 ### Changé
