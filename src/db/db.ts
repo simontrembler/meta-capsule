@@ -8,13 +8,16 @@ import type {
   AdTargeting,
   GeocodeCacheEntry
 } from './models';
-import type { FileSystemHandle } from '../types/file-system-access';
+import type { FileSystemFileHandle, FileSystemHandle } from '../types/file-system-access';
 
 export interface StoredFileHandle {
   id: string;
   fileName: string;
   kind?: 'file' | 'directory';
+  /** Primary handle (first ZIP or directory). */
   handle: FileSystemHandle;
+  /** Extra ZIP handles when a multi-part Facebook/Instagram batch is persisted. */
+  handles?: FileSystemFileHandle[];
 }
 
 export class MetaArchiveDatabase extends Dexie {

@@ -56,7 +56,7 @@ Vous pouvez ouvrir Accounts Center depuis Réglages → Compte Meta, mais les op
 2. Ajoutez la seconde plateforme depuis la barre latérale ou les paramètres.
 3. Laissez l’onglet ouvert pendant l’import : un gros ZIP peut prendre quelques minutes.
 
-**Facebook en plusieurs ZIP** : Meta découpe souvent un gros export en plusieurs parties. Une seule partie « médias » n’a souvent **aucun JSON** (et Meta Capsule refuse alors d’écraser une archive déjà bonne). Extrayez **toutes** les parties du même batch dans **un seul dossier** (les arbres se superposent), puis utilisez « Ouvrir un dossier ». Outils open source locaux : [PeaZip](https://peazip.github.io/) ou 7-Zip — **ne téléversez pas** vos ZIP Meta sur un site de fusion en ligne.
+**Facebook en plusieurs ZIP** : Meta découpe souvent un gros export en plusieurs parties. Sélectionnez **toutes** les parties `.zip` du même batch d’un coup (ou glissez-les), sinon extrayez-les dans **un seul dossier** puis « Ouvrir un dossier ». Une seule partie « médias » n’a souvent **aucun JSON** (Meta Capsule refuse alors d’écraser une archive déjà bonne). Outils open source locaux : [PeaZip](https://peazip.github.io/) ou 7-Zip — **ne téléversez pas** vos ZIP Meta sur un site de fusion en ligne.
 
 **Chrome** ou **Edge** : l’accès au fichier ou au dossier est mémorisé après un F5 (File System Access API).
 

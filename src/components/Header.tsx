@@ -60,11 +60,14 @@ function PlatformZipChip({ platform }: { platform: ArchivePlatform }) {
         type="file"
         ref={fileInputRef}
         accept=".zip,application/zip"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file?.name.toLowerCase().endsWith('.zip')) {
-            void attachZipForMedia(file, null, platform);
+          const zips = e.target.files
+            ? Array.from(e.target.files).filter((f) => f.name.toLowerCase().endsWith('.zip'))
+            : [];
+          if (zips.length > 0) {
+            void attachZipForMedia(zips, null, platform);
           }
           e.target.value = '';
         }}

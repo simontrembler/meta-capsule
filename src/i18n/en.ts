@@ -76,7 +76,7 @@ export const en: Record<TranslationKey, string> = {
   'import.drop': 'Drop the .zip or folder into the capsule',
   'import.hintFsa': 'Chrome/Edge: file or folder access is remembered after refresh',
   'import.hintBrowse': 'Safari/Firefox: re-select the ZIP (or folder) to view images again. The index stays local.',
-  'import.choose': 'Open a ZIP',
+  'import.choose': 'Open ZIP(s)',
   'import.chooseFolder': 'Open a folder',
   'import.error': 'Import error:',
   'import.localTitle': '100% Local',
@@ -88,7 +88,7 @@ export const en: Record<TranslationKey, string> = {
   'import.inProgress': 'Opening capsule…',
   'import.dontClose': 'Please keep this tab open during processing. Large archives may take a few minutes.',
   'import.privacyBadge': '100% local · no upload',
-  'import.facebookMultiZip': 'Facebook split across ZIPs? Meta Capsule imports one archive at a time. Extract every part into the same folder (the trees overlay), then use “Open a folder”. Local open-source tools: PeaZip or 7-Zip — don’t upload Meta ZIPs to an online merge site.',
+  'import.facebookMultiZip': 'Facebook split across ZIPs? Select every part of the same batch at once (Ctrl/Cmd+click), or drop them here. Or extract into one folder (PeaZip / 7-Zip) then “Open a folder” — don’t upload Meta ZIPs to an online merge site.',
   'import.facebookMultiZipLink': 'PeaZip',
 
   // Settings
@@ -113,7 +113,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact. Multi-ZIP Facebook export: extract every part into one folder (PeaZip / 7-Zip), then open that folder — not a single ZIP.',
+  'archives.body': 'Add Facebook and Instagram separately. Replacing one platform leaves the other intact. Multi-ZIP Facebook export: select every .zip part of the batch, or open the extracted folder (PeaZip / 7-Zip).',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',

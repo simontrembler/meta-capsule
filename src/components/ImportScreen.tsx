@@ -41,10 +41,12 @@ export const ImportScreen: React.FC = () => {
   }, [ingestFromDrop]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.name.toLowerCase().endsWith('.zip')) {
-        startIngestion(file, null);
+    if (e.target.files && e.target.files.length > 0) {
+      const zips = Array.from(e.target.files).filter((f) =>
+        f.name.toLowerCase().endsWith('.zip')
+      );
+      if (zips.length > 0) {
+        startIngestion(zips, null);
       }
     }
     e.target.value = '';
@@ -167,6 +169,7 @@ export const ImportScreen: React.FC = () => {
                     id="file-upload"
                     className="hidden"
                     accept=".zip,application/zip"
+                    multiple
                     onChange={handleFileInput}
                   />
 

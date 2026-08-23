@@ -55,8 +55,8 @@ export const ArchivesSlots: React.FC<{ variant?: Variant }> = ({ variant = 'sett
     await removePlatform(platform);
   };
 
-  const handleMediaFile = async (platform: ArchivePlatform, file: File) => {
-    await attachZipForMedia(file, null, platform);
+  const handleMediaFile = async (platform: ArchivePlatform, files: File[]) => {
+    await attachZipForMedia(files, null, platform);
   };
 
   const handleRestoreMedia = async (platform: ArchivePlatform) => {
@@ -159,14 +159,19 @@ export const ArchivesSlots: React.FC<{ variant?: Variant }> = ({ variant = 'sett
               <input
                 type="file"
                 accept=".zip,application/zip"
+                multiple
                 className="hidden"
                 ref={(el) => {
                   fileInputs.current[platform] = el;
                 }}
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file?.name.toLowerCase().endsWith('.zip')) {
-                    void handleMediaFile(platform, file);
+                  const zips = e.target.files
+                    ? Array.from(e.target.files).filter((f) =>
+                        f.name.toLowerCase().endsWith('.zip')
+                      )
+                    : [];
+                  if (zips.length > 0) {
+                    void handleMediaFile(platform, zips);
                   }
                   e.target.value = '';
                 }}

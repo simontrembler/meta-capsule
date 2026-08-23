@@ -3,6 +3,7 @@ import type { FileSystemDirectoryHandle } from '../types/file-system-access';
 
 export type MediaArchiveSource =
   | { kind: 'zip'; file: File }
+  | { kind: 'zips'; files: File[]; name: string }
   | { kind: 'directory'; root: FileSystemDirectoryHandle; name: string }
   | { kind: 'files'; map: Map<string, File>; name: string };
 
@@ -115,7 +116,11 @@ function withMimeType(blob: Blob, relativePath: string): Blob {
 
 function cacheKey(source: MediaArchiveSource, path: string): string {
   const name =
-    source.kind === 'zip' ? source.file.name : source.name;
+    source.kind === 'zip'
+      ? source.file.name
+      : source.kind === 'zips'
+        ? source.files.map((f) => f.name).join('+')
+        : source.name;
   return `${source.kind}:${name}:${path}`;
 }
 
@@ -162,6 +167,45 @@ async function blobFromZip(file: File, relativePath: string): Promise<Blob> {
   } finally {
     releaseZipSlot();
   }
+}
+
+/** Look up a path across multiple ZIP parts (full path first, then basename fallback). */
+async function blobFromZips(files: File[], relativePath: string): Promise<Blob> {
+  const normalizedPath = normalizePath(relativePath);
+  const lastSegment = normalizedPath.split('/').pop();
+  let basenameHit: { file: File; entry: ZipEntry } | null = null;
+
+  for (const file of files) {
+    const session = await getZipSession(file);
+    const exact =
+      session.byName.get(normalizedPath) ||
+      session.byNameLower.get(normalizedPath.toLowerCase());
+    if (exact) {
+      await acquireZipSlot();
+      try {
+        const raw = await exact.getData(new BlobWriter(mimeFromPath(normalizedPath)));
+        return withMimeType(raw, normalizedPath);
+      } finally {
+        releaseZipSlot();
+      }
+    }
+    if (!basenameHit && lastSegment) {
+      const base = session.byBase.get(lastSegment);
+      if (base) basenameHit = { file, entry: base };
+    }
+  }
+
+  if (basenameHit) {
+    await acquireZipSlot();
+    try {
+      const raw = await basenameHit.entry.getData(new BlobWriter(mimeFromPath(normalizedPath)));
+      return withMimeType(raw, normalizedPath);
+    } finally {
+      releaseZipSlot();
+    }
+  }
+
+  throw new Error(`Fichier non trouvé dans les archives : ${relativePath}`);
 }
 
 async function blobFromDirectory(
@@ -232,6 +276,8 @@ export async function getMediaBlobUrl(
     let blob: Blob;
     if (resolved.kind === 'zip') {
       blob = await blobFromZip(resolved.file, normalizedPath);
+    } else if (resolved.kind === 'zips') {
+      blob = await blobFromZips(resolved.files, normalizedPath);
     } else if (resolved.kind === 'directory') {
       blob = await blobFromDirectory(resolved.root, normalizedPath);
     } else {

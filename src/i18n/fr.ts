@@ -77,7 +77,7 @@ export const fr = {
   'import.drop': 'Déposez le .zip ou le dossier dans la capsule',
   'import.hintFsa': 'Chrome/Edge : l’accès fichier ou dossier est mémorisé après F5',
   'import.hintBrowse': 'Safari/Firefox : le ZIP (ou le dossier) doit être resélectionné pour revoir les images. L’index reste local.',
-  'import.choose': 'Ouvrir un ZIP',
+  'import.choose': 'Ouvrir des ZIP',
   'import.chooseFolder': 'Ouvrir un dossier',
   'import.error': "Erreur d'importation :",
   'import.localTitle': '100% Local',
@@ -89,7 +89,7 @@ export const fr = {
   'import.inProgress': 'Ouverture de la capsule…',
   'import.dontClose': "Ne fermez pas cet onglet pendant le traitement. Les grosses archives peuvent prendre quelques minutes.",
   'import.privacyBadge': '100 % local · aucun upload',
-  'import.facebookMultiZip': 'Facebook en plusieurs ZIP ? Meta Capsule n’importe qu’une archive à la fois. Extrayez toutes les parties dans le même dossier (les arbres se superposent), puis utilisez « Ouvrir un dossier ». Outils open source locaux : PeaZip ou 7-Zip — ne téléversez pas vos ZIP Meta sur un site de fusion en ligne.',
+  'import.facebookMultiZip': 'Facebook en plusieurs ZIP ? Sélectionnez toutes les parties du même batch d’un coup (Ctrl/Cmd+clic), ou glissez-les ici. Autrement, extrayez-les dans un dossier (PeaZip / 7-Zip) puis « Ouvrir un dossier » — ne téléversez pas vos ZIP Meta sur un site de fusion en ligne.',
   'import.facebookMultiZipLink': 'PeaZip',
 
   // Settings
@@ -114,7 +114,7 @@ export const fr = {
 
   // Multi-archive
   'archives.title': 'Archives',
-  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre. Export Facebook multi-ZIP : extrayez toutes les parties dans un dossier (PeaZip / 7-Zip), puis ouvrez ce dossier — pas un ZIP seul.',
+  'archives.body': 'Ajoutez Facebook et Instagram séparément. Remplacer une plateforme n’efface pas l’autre. Export Facebook multi-ZIP : sélectionnez toutes les parties .zip du batch, ou ouvrez le dossier extrait (PeaZip / 7-Zip).',
   'archives.sidebarLabel': 'Archives',
   'archives.facebook': 'Facebook',
   'archives.instagram': 'Instagram',
